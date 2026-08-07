@@ -106,3 +106,16 @@ handling instead of one setting for everything.
 If we shall later throttle our own process so it works in the background
 with other apps running i.e spread the work over a longer period of time
 to compete lesser with other processes.
+
+---
+
+## 2026-08-07 — .env for hardcoded paths and config
+
+Right now paths (manifest, staging dir, archives dir, STATE_LOG
+default) and Termux-specific shebangs are hardcoded across common.sh,
+track.py, and the entry scripts. Works fine single-device, single-user
+— but caught mid-session while building retry-logic tests: we had to
+hand-export STATE_LOG per-shell with no enforcement, which is the same
+underlying problem. Related to the file-hash-integrity item (both are
+"assumes single trusted environment" gaps) — worth doing together
+before any open-source push, not urgent before then.
