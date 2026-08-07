@@ -154,6 +154,18 @@ script's change instead of one big end-of-session catch-all commit.
 Read-only diagnostics (status checks, greps, `track.py get`) are
 exempt — this applies only to commands that write.
 
+Once `WRITTEN` prints, confirm with `git diff` before committing, then
+delete the script — don't keep it around after. `.patches/` predates
+git and was doing git's job by hand (the only record of what changed
+and why); now the commit itself is that record, searchable and
+permanent, so the script's only remaining value is the run itself.
+The `SKIPPED`/`WRITTEN`/`ABORT` check stays exactly as-is — it's still
+a better automated safety net than eyeballing a diff by hand before
+running. It's specifically the *file*, post-commit, that's now
+disposable. Sequence: run patch → `WRITTEN` → `git diff` to confirm
+the change matches intent → `git add`/`git commit` → `rm` the patch
+script.
+
 **Chat-summary usage:** when something looks broken, missing, or
 untested, check `INDEX.md` first for which chat-summary covers that
 topic — not just the latest one. Read that summary as a starting point
