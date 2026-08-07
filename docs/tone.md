@@ -162,9 +162,14 @@ permanent, so the script's only remaining value is the run itself.
 The `SKIPPED`/`WRITTEN`/`ABORT` check stays exactly as-is — it's still
 a better automated safety net than eyeballing a diff by hand before
 running. It's specifically the *file*, post-commit, that's now
-disposable. Sequence: run patch → `WRITTEN` → `git diff` to confirm
-the change matches intent → `git add`/`git commit` → `rm` the patch
-script.
+disposable. The script does this itself, not as separate manual
+steps: writes, confirms via `git diff` the diff actually contains the
+intended change (not just that *a* write happened), then `git add` +
+`git commit` on just the file(s) it touched, prints confirmation, then
+deletes itself (`os.remove(__file__)`). One run, no manual follow-up
+commands. The patch script is never `git add`ed itself — it does its
+job and removes itself before anything would track it, so `.patches/`
+stays empty between sessions rather than accumulating.
 
 **Chat-summary usage:** when something looks broken, missing, or
 untested, check `INDEX.md` first for which chat-summary covers that
