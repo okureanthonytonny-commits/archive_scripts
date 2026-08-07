@@ -139,6 +139,21 @@ Every print should name the change it belongs to, e.g.
 `WRITTEN (anomaly-mode prompt added)`, not just `WRITTEN`. Already the
 habit informally; making it explicit.
 
+**Patch scripts commit themselves:** any file edit or file creation
+goes through a saved script in `.patches/`, never a bare inline
+`sed`/one-off shell command — this was already the informal habit, now
+explicit since git makes the reason concrete: an untracked inline edit
+has no record of *why*, only a patch script does. Once the write
+succeeds (`WRITTEN`, not `SKIPPED`/`ABORT`), the same script stages and
+commits just the file(s) it touched, with a commit message matching
+its self-identifying print (see previous bullet) — e.g.
+`git add docs/bugQueue.md && git commit -m "ffprobe bug marked resolved"`.
+This makes `git log` a running index of patches without a separate
+manual sweep at session-end, and keeps each commit scoped to one patch
+script's change instead of one big end-of-session catch-all commit.
+Read-only diagnostics (status checks, greps, `track.py get`) are
+exempt — this applies only to commands that write.
+
 **Chat-summary usage:** when something looks broken, missing, or
 untested, check `INDEX.md` first for which chat-summary covers that
 topic — not just the latest one. Read that summary as a starting point
