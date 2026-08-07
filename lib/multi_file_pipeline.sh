@@ -14,7 +14,7 @@ process_month() {
   local filelist="$1"
   local month_stage="$2"
   local total f base ext ext_lower
-  local result state_name state_int kind path note
+  local result state_name state_int kind path note attempts
   local video_jobs=0
   local video_pids=()
   local count=0
