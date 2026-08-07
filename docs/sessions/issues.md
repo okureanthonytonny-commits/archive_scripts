@@ -165,15 +165,16 @@
 
 **2. Two real `ffprobe` verify failures in `2026-03` — resolved, see `bugQueue.md`**
 
-**3. Diagnostic tooling gap found investigating item 1**
+**3. Diagnostic tooling gap found investigating item 1 — fixed**
 - The ad-hoc orphan status-dump script (staged/original/track/manifest
-  per file) has a path bug for `.webp` originals: it reconstructs the
+  per file) had a path bug for `.webp` originals: it reconstructed the
   original path by swapping the staged extension back onto the
   filename, but originals were `.jpg`/`.png`, not `.webp`, so it
-  reports `original: MISSING` for nearly every webp regardless of
-  whether that's actually true. Not fixed — was a one-off diagnostic,
-  not a pipeline component — but worth remembering before trusting its
-  webp output at face value if reused.
+  reported `original: MISSING` for nearly every webp regardless of
+  whether that was actually true. Fixed and now saved and fixed at
+  `tests/diagnostics/orphan_status.sh` (tries real candidate
+  extensions for webp outputs) instead of living only in chat history
+  as a one-off.
 
 **4. Deferred gaps (see `ideas.md` and `architecture.md` for reasoning)**
 - Orphan enumeration through `verify()` — reconciliation currently

@@ -94,3 +94,12 @@ next step rather than something to rush into the same session.
    scoped as its own short session, not squeezed into pipeline work.
 6. Docs updated this session: `bugQueue.md`, `issues.md`,
    `progress.md`, this summary.
+
+## Postscript
+Before closing, caught one more scattered item: the orphan diagnostic
+script (staged/original/track/manifest dump, used to investigate the
+26 `2026-03` orphans) only ever existed as an ad-hoc terminal command,
+not saved anywhere. Saved it properly as
+`tests/diagnostics/orphan_status.sh`, fixing the `.webp` path bug
+(issues.md gap 3) in the same pass rather than saving the buggy
+version.
