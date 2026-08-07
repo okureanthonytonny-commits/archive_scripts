@@ -1,0 +1,4 @@
+2026-08-07T12:30:47	/storage/emulated/0/DCIM/Camera/20260324_080113.mp4	1	COMPRESSED	video	/data/data/com.termux/files/home/archive_staging/2026-03/DCIM/Camera/20260324_080113.mp4	
+2026-08-07T12:30:48	/storage/emulated/0/DCIM/Camera/20260324_080113.mp4	-1	FAILED	video	/data/data/com.termux/files/home/archive_staging/2026-03/DCIM/Camera/20260324_080113.mp4	ffprobe duration check failed
+2026-08-07T12:30:48	/storage/emulated/0/DCIM/Camera/20260324_080046.mp4	1	COMPRESSED	video	/data/data/com.termux/files/home/archive_staging/2026-03/DCIM/Camera/20260324_080046.mp4	
+2026-08-07T12:30:49	/storage/emulated/0/DCIM/Camera/20260324_080046.mp4	-1	FAILED	video	/data/data/com.termux/files/home/archive_staging/2026-03/DCIM/Camera/20260324_080046.mp4	ffprobe duration check failed

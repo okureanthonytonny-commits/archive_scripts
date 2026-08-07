@@ -1,0 +1,8 @@
+# Runtime state — regenerated per-run, not code
+.state
+.state_log.tsv
+
+# Real media fixtures — binary, not meant to live in git history
+tests/fixtures/**/*.mp4
+tests/fixtures/**/*.webp
+tests/fixtures/**/*.mov

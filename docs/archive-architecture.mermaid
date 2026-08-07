@@ -1,0 +1,61 @@
+flowchart TD
+    subgraph Entry["Entry points — self-relaunch into tmux + wake-lock if not already inside one"]
+        MultiMonth["multi_month_zipper.sh\n(orchestrator: loops months, stops on real failure)"]
+        SingleMonth["single_month_zipper.sh\n(worker: runs ONE month end-to-end)"]
+    end
+
+    MultiMonth -->|"calls per month, checks exit code"| SingleMonth
+
+    subgraph Libs["lib/ — sourced only, never run directly"]
+        Common["common.sh\nconfig, log(), set_state(), check_space()"]
+        Pipeline["multi_file_pipeline.sh\nprocess_month() — orchestration ONLY,\nno compression/verify/delete logic itself"]
+        Compressor["single_file_compressor.sh\ncompressor_process() — one file in,\none compressed file out"]
+        Verify["verify.sh\nverify() — decode-check + failure reason"]
+        Delete["delete.sh\ndelete() — remove original iff VERIFIED"]
+    end
+
+    SingleMonth -->|source| Common
+    SingleMonth -->|source| Compressor
+    SingleMonth -->|source| Verify
+    SingleMonth -->|source| Delete
+    SingleMonth -->|source| Pipeline
+
+    Manifest[("archive_manifest.tsv\n(pre-built, all months)")]
+    SingleMonth -->|"awk-filter by month"| FileList[(".archive_tmp/filelist_YYYY-MM.txt")]
+    Manifest --> FileList
+    FileList --> Pipeline
+
+    subgraph Pass1["Pass 1: compress"]
+        Pipeline -->|"per file, state-checked first"| Compressor
+        Compressor -->|"track.py set COMPRESSED\n+ tool stderr as note"| StateLog
+    end
+
+    Barrier{{"wait — hard barrier\nnothing below starts until\nEVERY backgrounded video job\nhas actually finished"}}
+    Pass1 --> Barrier
+
+    subgraph Pass2["Pass 2: verify"]
+        Barrier --> Verify
+        Verify -->|"COMPRESSED → VERIFIED or FAILED\n(reason + prior tool_err combined)"| StateLog
+    end
+
+    subgraph Pass3["Pass 3: delete"]
+        Pass2 --> Delete
+        Delete -->|"VERIFIED → DELETED\nonly place an original is removed"| StateLog
+    end
+
+    StateLog[(".state_log.tsv\nappend-only, per-url,\nTHE single source of truth\nvia track.py")]
+
+    Pass3 --> Staging[("archive_staging/YYYY-MM/")]
+    Staging -->|"zip + verify"| Zip[("Archives/Month-Year.zip")]
+    Zip -->|"verified"| ClearStage["rm -rf staging"]
+
+    StateLog -.->|"summary.py: query, not a write —\nlast row per url, terminal states only"| FileLog[("files.tsv\nregenerated on demand,\nnever written directly")]
+    FileLog -.-> SingleMonth
+
+    Compressor -.->|"each file"| StateFile[(".state\noverwritten, 1 line:\ncurrent file + load avg"]
+    SingleMonth -.-> RunLog[("run.log\nnarrative, human-readable")]
+    Pipeline -.-> RunLog
+
+    style Pipeline fill:#1f2a3a,stroke:#4a7ab5,stroke-width:2px
+    style Barrier fill:#3a2f1f,stroke:#c08a2b,stroke-width:2px
+    style StateLog fill:#1f3a24,stroke:#2bc060,stroke-width:2px

@@ -1,0 +1,68 @@
+CONTRACTS.txt — who calls who, exact references
+
+RULE OF THUMB FIRST:
+- Called "by name" (a bash function, e.g. verify()) only breaks if the
+  FUNCTION name changes — renaming the FILE is safe as long as the
+  `source` line pointing at it still points at the right path.
+- Called "by path" (source "...", python3 "...") breaks the instant the
+  filename changes, wherever that exact string appears.
+- track.py and summary.py are called BY PATH from the most places —
+  renaming either means checking every "Calls" line below.
+
+## multi_month_zipper.sh   (was archive_run_all.sh)
+Run by hand: `multi_month_zipper.sh`
+Calls:
+  - "$SCRIPT_DIR/single_month_zipper.sh" "$month"      [by path]
+
+## single_month_zipper.sh   (was archive_compress.sh)
+Run by hand or by multi_month_zipper.sh: `single_month_zipper.sh <YYYY-MM>`
+Sources:
+  - "$SCRIPT_DIR/lib/common.sh"                          [by path]
+  - "$SCRIPT_DIR/lib/single_file_compressor.sh"          [by path]
+  - "$SCRIPT_DIR/lib/verify.sh"                           [by path]
+  - "$SCRIPT_DIR/lib/delete.sh"                           [by path]
+  - "$SCRIPT_DIR/lib/multi_file_pipeline.sh"              [by path]
+Calls:
+  - process_month "$FILELIST" "$MONTH_STAGE"              [by name]
+  - python3 "$SCRIPT_DIR/lib/summary.py" ... > FILE_LOG    [by path]
+
+## lib/common.sh
+Exposes (by name — renaming this FILE is safe, function names aren't):
+  - log(), set_state(), check_space(), check_space_for_zip(),
+    month_to_zipname()
+Depends on: nothing
+
+## lib/single_file_compressor.sh   (was lib/compress.sh)
+Exposes: compressor_process()          [called by name, from multi_file_pipeline.sh]
+Calls:
+  - python3 "$SCRIPT_DIR/lib/track.py" set ...   [by path]
+
+## lib/verify.sh
+Exposes: verify()                       [called by name, from multi_file_pipeline.sh]
+Calls:
+  - python3 "$SCRIPT_DIR/lib/track.py" get/set ...   [by path]
+  - log()                                            [by name, from common.sh]
+
+## lib/delete.sh
+Exposes: delete()                       [called by name, from multi_file_pipeline.sh]
+Calls:
+  - python3 "$SCRIPT_DIR/lib/track.py" get/set ...   [by path]
+  - log()                                            [by name, from common.sh]
+
+## lib/multi_file_pipeline.sh   (was lib/process_month.sh)
+Exposes: process_month()                [called by name, from single_month_zipper.sh]
+Calls:
+  - check_space(), set_state(), log()               [by name, from common.sh]
+  - python3 "$SCRIPT_DIR/lib/track.py" get/set ...   [by path]
+  - compressor_process()                            [by name, from single_file_compressor.sh]
+  - verify()                                         [by name, from verify.sh]
+  - delete()                                         [by name, from delete.sh]
+
+## lib/track.py
+Exposes CLI: `python3 track.py set|get ...`
+Called BY PATH from: single_file_compressor.sh, verify.sh, delete.sh, multi_file_pipeline.sh
+Also read (as a file, not called): summary.py
+
+## lib/summary.py
+Exposes CLI: `python3 summary.py <filelist>`
+Called BY PATH from: single_month_zipper.sh
