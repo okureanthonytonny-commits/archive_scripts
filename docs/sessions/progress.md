@@ -196,11 +196,8 @@
 - Apps+System storage (~45GB) not addressable by this pipeline —
   needs manual `Settings → Apps → clear cache` pass.
 - (2026-07-31 backlog items migrated into `ideas.md` on 2026-08-02.)
-- **Note for session 7:** `2026-03` still has 24 clean video orphans
-  + all `.webp` orphans (from the same abandoned pre-rewrite run,
-  see 2026-08-07 below) needing manifest fold-in before
-  `single_month_zipper.sh 2026-03` can complete the month. The 2
-  corrupted orphans from that batch are resolved.
+- **2026-03 unblocked (2026-08-08):** all 75 true orphans folded into
+  manifest + track.py. Ready for `single_month_zipper.sh 2026-03`.
 
 ## 2026-08-07
 - Diagnosed the 2 `ffprobe`-failed files from 2026-08-06: checked the
@@ -249,3 +246,22 @@
 - Adopted git: project had outgrown the "3 simple scripts" assumption
   it started under. Initialized, `.gitignore` for runtime state and
   binary fixtures, baseline commit pushed to GitHub.
+
+## 2026-08-08
+- Verified `orphan_status.sh` output against last session's narrative and
+  found a mismatch: only 3 of the 26 "orphans" were true orphans (original
+  gone, no manifest row) — the other 2 flagged as corrupted last session
+  actually still had real originals in `DCIM` and were `VERIFIED`, not
+  orphaned. They need normal Pass 3 delete, not manual state writes.
+- Integrity-checked all 75 true orphans (72 `.webp` via `dwebp`, 3 `.mp4`
+  via `ffprobe`) — all clean.
+- Folded all 75 into `archive_manifest.tsv` (2026-03) and `track.py`
+  (`DELETED` state, staged path as sole surviving copy) — idempotent
+  append loop, verified independently after: `PASS=75 FAIL=0`.
+- Hit the Termux `/tmp` permission wall twice more (dwebp error redirect,
+  orphan_status.sh output) — same fix as before, redirect to `./`.
+  Heredoc paste also proved unreliable mid-session; switched to
+  base64+python3 for the data file transfer, which held up clean.
+- `2026-03` is now unblocked: manifest has all 84 rows it needs. Next
+  `single_month_zipper.sh 2026-03` run zips everything and resolves the
+  2 pending Pass-3 deletes.
