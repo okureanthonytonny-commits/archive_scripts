@@ -140,28 +140,24 @@
 - `.gitignore` excludes runtime state (`.state`, `.state_log.tsv`) and
   binary media fixtures — code and docs only in history.
 
+## Resolved this session (2026-08-08)
+
+**1. `2026-03` orphan fold-in — resolved**
+- `orphan_status.sh` gave per-file ground truth, correcting the prior
+  session's count: only 3 of 26 flagged files were true orphans (no
+  original, no manifest row); the other 2 still had real originals in
+  `DCIM` and were `VERIFIED`, not orphaned — those resolve normally via
+  Pass 3, not a manual write.
+- The real orphan set was 75 files (72 `.webp` + 3 `.mp4`, not 26) —
+  integrity-checked clean, folded into `archive_manifest.tsv` and
+  `track.py` (`DELETED` state). Verified independently after:
+  `PASS=75 FAIL=0`.
+- `2026-03` is unblocked. Next `single_month_zipper.sh 2026-03` run
+  completes the month.
+
 ## Open
 
-**1. `2026-03` has 26 orphaned files from an abandoned pre-rewrite run**
-- Reconciliation correctly flagged 28 `ORPHAN` files (2 of which were
-  the separately-explained verify failures below). The remaining 26
-  are `.webp`/`.mp4` outputs from an earlier, abandoned March run —
-  staged 2026-07-31, three days before the current manifest was
-  rebuilt (2026-08-03), so the manifest never knew about them.
-  Originals no longer exist in `DCIM` — these are the only surviving
-  copies. Chose `[c]ancel` over `[s]kip` since skip's exact behavior
-  on untracked files was unverified and the data can't be re-shot.
-- Next: verify not corrupted (`ffprobe -v error`), fold into the
-  manifest, re-run to complete the month.
-- Answered this session: the abandoned run predates `track.py`
-  entirely (pre-rewrite pipeline had no state system yet), so nothing
-  wrote a track/manifest entry at the time — not a bug in the current
-  system, just a gap the current system correctly detects as `ORPHAN`
-  but can't yet resolve on its own (see gap 4 below).
-- Still open: fold the 24 confirmed-clean video orphans + all `.webp`
-  orphans into the manifest and re-run `single_month_zipper.sh
-  2026-03` to complete the month. The 2 corrupted orphans are resolved
-  — see `bugQueue.md`.
+**1. `2026-03` orphan fold-in — RESOLVED 2026-08-08, see above**
 
 **2. Two real `ffprobe` verify failures in `2026-03` — resolved, see `bugQueue.md`**
 
@@ -215,10 +211,9 @@
   zip exists in `Archives/`. Its 6 source files are gone (correctly
   deleted); re-running it now tests `MISSING` handling, not a repeat
   smoke test.
-- 2026-03: blocked, not crashed — pipeline ran correctly (2 verify
-  failures handled safely, reconciliation caught 26 real orphans from
-  an old abandoned run) but stopped short of zipping pending manual
-  fold-in of those 26 files. See Open item 1.
+- 2026-03: unblocked as of 2026-08-08 — 75 real orphans folded into
+  manifest + track.py. Ready for `single_month_zipper.sh 2026-03` to
+  complete the month.
 - 2025-12, 2026-02: not started.
 - Trust test result: 2 of 3 months (`2026-04`, `2026-01`) fully clean.
   `2026-03` is a pass for the tooling itself — reconciliation did
