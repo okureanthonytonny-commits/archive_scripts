@@ -58,6 +58,7 @@ log "=== Orchestrator starting (PID $$) ==="
 log "Month order: ${MONTHS[*]}"
 
 SUCCEEDED=()
+SKIPPED_MONTHS=()
 FAILED_MONTH=""
 
 for month in "${MONTHS[@]}"; do
@@ -77,17 +78,19 @@ for month in "${MONTHS[@]}"; do
   if [ "$status" -eq 0 ]; then
     log "--- $month finished OK ---"
     SUCCEEDED+=("$month")
+  elif [ "$status" -eq 1 ]; then
+    log "--- $month FAILED (exit code 1 = zip creation/verification problem) — isolated to this month. Skipping, continuing to next. ---"
+    log "Reason context is in $LOG_DIR/${month}_run.log and $LOG_DIR/${month}_files.tsv"
+    SKIPPED_MONTHS+=("$month")
   else
     log "--- $month FAILED (exit code $status) — stopping orchestration here. ---"
     log "Reason context is in $LOG_DIR/${month}_run.log and $LOG_DIR/${month}_files.tsv"
     if [ "$status" -eq 2 ]; then
-      log "Exit code 2 = low disk space. Free space, then resume with:"
-    elif [ "$status" -eq 3 ]; then
-      log "Exit code 3 = reconciliation anomaly, cancelled by choice. Investigate staging/file log, then resume with:"
+      log "Exit code 2 = low disk space. This will hit every remaining month too — free space, then resume with:"
     else
-      log "Exit code 1 = zip creation/verification problem. Investigate before resuming with:"
+      log "Exit code 3 = reconciliation anomaly, cancelled by choice. Investigate staging/file log, then resume with:"
     fi
-    log "  $0 ${MONTHS[*]:$(( ${#SUCCEEDED[@]} ))}"
+    log "  $0 ${MONTHS[*]:$(( ${#SUCCEEDED[@]} + ${#SKIPPED_MONTHS[@]} ))}"
     FAILED_MONTH="$month"
     break
   fi
@@ -95,11 +98,20 @@ done
 
 log "=== Orchestrator summary ==="
 log "Succeeded: ${SUCCEEDED[*]:-none}"
+log "Skipped (failed, isolated): ${SKIPPED_MONTHS[*]:-none}"
 if [ -n "$FAILED_MONTH" ]; then
   log "Stopped at: $FAILED_MONTH (not yet complete)"
 else
-  log "All requested months complete."
+  log "All requested months attempted."
 fi
 
 log "Archives so far:"
 ls -lh "$ARCHIVES_DIR" 2>>"$ORCH_LOG" | tee -a "$ORCH_LOG"
+
+if [ -n "$FAILED_MONTH" ]; then
+  exit 1
+elif [ "${#SKIPPED_MONTHS[@]}" -gt 0 ]; then
+  exit 4
+else
+  exit 0
+fi
