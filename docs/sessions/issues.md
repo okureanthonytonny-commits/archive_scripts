@@ -155,6 +155,24 @@
 - `2026-03` is unblocked. Next `single_month_zipper.sh 2026-03` run
   completes the month.
 
+## Resolved this session (2026-08-09)
+
+**1. `2026-03` completed — 3/3 trust test**
+- Confirmed the 2 pending mp4s (`20260324_080113.mp4`,
+  `20260324_080046.mp4`) as `VERIFIED` in `track.py` before running
+  (key is the full manifest path, not the bare filename -- tripped on
+  this checking).
+- Ran `single_month_zipper.sh 2026-03`: 84 files zipped (12
+  `OK_H264_DELETED` + 72 `OK_WEBP_DELETED`), zip verified, staging
+  cleared. Month complete.
+- Ran a second time deliberately to observe anomaly-gate behavior on
+  an already-finished month: all 84 correctly flagged `GHOST` (state
+  `DELETED`, staged file already gone -- expected, not a bug). Chose
+  `[c]ancel`, exited clean, no side effects.
+- Trust test now 3/3 (`2026-04`, `2026-01`, `2026-03`).
+  `multi_month_zipper.sh` unattended is viable for the remaining
+  months.
+
 ## Open
 
 **1. `2026-03` orphan fold-in — RESOLVED 2026-08-08, see above**
