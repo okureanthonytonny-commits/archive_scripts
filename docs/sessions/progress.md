@@ -265,3 +265,21 @@
 - `2026-03` is now unblocked: manifest has all 84 rows it needs. Next
   `single_month_zipper.sh 2026-03` run zips everything and resolves the
   2 pending Pass-3 deletes.
+
+## 2026-08-09
+- Verified the 2 pending `VERIFIED` mp4s (`20260324_080113.mp4`,
+  `20260324_080046.mp4`) before running -- both confirmed `VERIFIED` in
+  `track.py` (key is full manifest path, not bare filename).
+- Ran `single_month_zipper.sh 2026-03`: zipped 84 files (12
+  `OK_H264_DELETED` + 72 `OK_WEBP_DELETED`) to
+  `/storage/emulated/0/Archives/March-2026.zip` (254M), zip verified,
+  staging cleared. `2026-03` complete.
+- Ran it a second time deliberately, to see anomaly-gate behavior on
+  an already-completed month: all 84 files correctly flagged `GHOST`
+  (state `DELETED`, staged file already cleared by run 1) -- not a
+  bug, staging just doesn't exist anymore. Chose `[c]ancel`; exited
+  clean, no side effects, originals untouched (there were none left
+  to touch).
+- **Trust test: 3/3** (`2026-04`, `2026-01`, `2026-03` all clean).
+  `multi_month_zipper.sh` unattended is now viable for the remaining
+  months (`2025-12`, `2026-02`).
