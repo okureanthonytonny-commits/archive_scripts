@@ -5,14 +5,28 @@ months, to usable quality. Deletes originals only once the compressed
 copy is verified, then zips the result. Runs entirely in Termux, no PC
 involved.
 
+- [Why this exists](#why-this-exists)
+- [Usage](#usage)
+- [Status](#status)
+- [Known gaps](#known-gaps)
+- [Docs](#docs)
+
 ## Why this exists
 
 Kept direct on purpose — this is reasoning, not a pitch.
 
 - Goal: free device storage without losing data.
 
-  ![Internal storage at 95% used, 30 Jul 2026](docs/images/storage-before-95-percent.jpg)
-  ![Internal storage at 91% used, 9 Aug 2026](docs/images/storage-after-91-percent.jpg)
+  
+
+![Internal storage at 95% used, 30 Jul 2026](docs/images/storage-before-95-percent.jpg)
+
+
+  
+
+![Internal storage at 91% used, 9 Aug 2026](docs/images/storage-after-91-percent.jpg)
+
+
 
   95% → 91%, after two months compressed so far. More checks are still
   running before the rest of the backlog gets zipped unattended.
@@ -50,10 +64,8 @@ a mystery.
   months.
 
 Both self-relaunch into a detached `tmux` session with a wake-lock, so a
-run survives Termux getting backgrounded or the screen locking.
-
-Full pipeline detail — the three-pass state machine, the verify barrier,
-what each log file is for — lives in `docs/architecture.md`.
+run survives Termux getting backgrounded or the screen locking. Full
+pipeline detail is in [Docs](#docs) below.
 
 ## Status
 
@@ -64,7 +76,11 @@ time, not yet trusted to run the rest of the backlog unattended.
 unblocked and next in line. The rest of the backlog (five months,
 ~38GB) follows after that.
 
+
+
 ![Compressed month zips on-device, 9 Aug 2026](docs/images/compressed-months-zips.jpg)
+
+
 
 (`January-2099.zip` is test fixture data, not a real month.)
 
@@ -79,5 +95,11 @@ automatically up to a cap before it's given up on as a real failure.
   would need an `.env` before this runs anywhere else.
 - Only proven under Termux/Android. Never tried in a plain Linux shell.
 
-Fuller history of every bug, rewrite, and decision that got this here
-lives in `docs/sessions/`.
+## Docs
+
+- [architecture.md](docs/architecture.md) — full pipeline detail: state
+  machine, verify barrier, what each log file is for.
+- [archive-architecture.mermaid](docs/archive-architecture.mermaid) —
+  same pipeline as a diagram.
+- [sessions/](docs/sessions/) — session-by-session history: every bug
+  found, decision made, and rewrite, in order.
