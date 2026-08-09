@@ -1,9 +1,10 @@
 # archive_scripts — architecture
 
-Compresses and archives phone media to Backblaze B2, running entirely in
-Termux on Android. Rewritten in the 2026-08-02 session from a monolithic
-per-file script into a small state-tracked pipeline, after two unexplained
-crashes made "what actually happened" impossible to answer from logs alone.
+Compresses and archives phone media to usable quality, running entirely
+in Termux on Android. Rewritten in the 2026-08-02 session from a
+monolithic per-file script into a small state-tracked pipeline, after
+two unexplained crashes made "what actually happened" impossible to
+answer from logs alone.
 
 ## Entry points
 
@@ -108,15 +109,16 @@ Full call-by-call reference, including which references are by-name
 
 ## Known gaps (see `ideas.md` for the original reasoning)
 
-- No automatic retry on `FAILED` — a transient failure needs a manual
-  re-run today, not a built-in backoff.
 - No size-ratio sanity check before delete — verify confirms the output
   *decodes*, not that compression actually shrank the file meaningfully.
 - No final reconciliation pass — nothing yet cross-checks the zip's file
   count against the manifest's expected count for the month.
-- Never tested against a real, sustained on-device run — only against
-  synthetic files in a sandbox. First real-world proof is the pending
-  on-device smoke test.
+- Two months (`2026-01`, `2026-04`) have run clean end-to-end on real
+  device data, confirmed by hand each time — not yet trusted to run the
+  rest of the backlog unattended.
+
+Retry-on-failure shipped: a file that fails verify gets recompressed
+automatically, up to a cap, before it's given up on as a real failure.
 
 ## History
 
