@@ -6,6 +6,7 @@ copy is verified, then zips the result. Runs entirely in Termux, no PC
 involved.
 
 - [Why this exists](#why-this-exists)
+- [Getting started](#getting-started)
 - [Usage](#usage)
 - [Status](#status)
 - [Known gaps](#known-gaps)
@@ -55,6 +56,27 @@ Rewrite is built around one rule: **never trust anything that isn't
 written down.** Every file's state lives in an append-only log. Nothing
 is inferred from what's currently on disk. A crash is recoverable, not
 a mystery.
+
+## Getting started
+
+Dependencies (confirmed by grepping the actual scripts for external
+command calls):
+
+```
+pkg install python tmux termux-api ffmpeg webp zip unzip
+```
+
+`termux-api` also needs the **Termux:API** companion app installed
+separately (F-Droid) for `termux-wake-lock` to work.
+
+Clone (needs `git`, not a pipeline dependency, just how you get the code)
+and run:
+
+```
+git clone https://github.com/okureanthonytonny-commits/archive_scripts
+cd archive_scripts
+./single_month_zipper.sh 2026-01
+```
 
 ## Usage
 
