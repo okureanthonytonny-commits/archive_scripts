@@ -119,3 +119,32 @@ hand-export STATE_LOG per-shell with no enforcement, which is the same
 underlying problem. Related to the file-hash-integrity item (both are
 "assumes single trusted environment" gaps) — worth doing together
 before any open-source push, not urgent before then.
+
+## 2026-08-09 — Reddit post draft: storage crisis story
+
+I thought you meant I'm compressing and packaging them for upload to backblaze.
+
+Here's why the whole point to this project came about.
+My Device storage is almost full at about 91% currently but it was about 95% before we compressed any month data.
+
+I wanted to free up storage without losing my original data. So first I made a backup to backblaze for it's low storage pricing. I'll connect it to cloudflare for zero egress fees for downloads later.
+
+Next was to actually free up storage.
+Most searches and AI responses told me,
+A. to delete more stuff after backup,
+B. if not backed up, compress and delete not so important stuff.
+
+Which had some trade offs:
+For A. zero egress fees and cheaper storage than Google drive doesn't mean faster access or zero data costs for downloads which downloads would fill up space anyway.
+And backup doesn't mean the risk of losing data is zero e.g forgotten password. Platform breaches are nolonger breaking news.
+
+For B. I'd lose original data. And there's no available tool that can iterate my entire gallery compressing the files. If it did exist, it had to progressively delete the original copies because storing compressed and original would fill up memory and brick my phone.
+Also even if I can do one file at a time during free times, I'm lazy and forgetful.
+
+So, I decided to do both A and B.
+Backup originals, compress old files aggressively while keeping the quality usable.
+As an extra, I decided to package the data on a monthly basis just to make sure I don't mix compressed and originals during the process. WhatsApp data is already compressed by default, so needed a tool which could be configured to skip them.
+
+The screenshot is of my files app fresh today 10am 9th August 2026. Only one month has been successfully compressed, verified, packaged, originals deleted with logging at each stage for tracing anomalies.
+
+---
