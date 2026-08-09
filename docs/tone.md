@@ -171,16 +171,16 @@ commands. The patch script is never `git add`ed itself — it does its
 job and removes itself before anything would track it, so `.patches/`
 stays empty between sessions rather than accumulating.
 
-**Chat-summary usage:** when something looks broken, missing, or
-untested, check `INDEX.md` first for which chat-summary covers that
-topic — not just the latest one. Read that summary as a starting point
-before re-deriving from scratch. Doesn't replace verification — checking
-code, running it, or a screenshot is still the normal next step when it
-matters.
+**Chat-summary usage:** `archive_scripts` has no `INDEX.md` (that
+convention is from the Ledger project only). When something looks
+broken, missing, or untested, check `docs/sessions/` directly --
+summaries are named `session-YYYY-MM-DD-summary.md`, most recent last
+alphabetically. Read the relevant one as a starting point before
+re-deriving from scratch. Doesn't replace verification -- checking
+code, running it, or a screenshot is still the normal next step when
+it matters.
 
-**End-of-session checklist:** the checklist in
-[INDEX.md](../INDEX.md#end-of-session-checklist) is still a draft
-(rules.md D4) — not adopted, not yet proven to survive being
-uploaded-and-actually-checked across real sessions. Worth running
-through anyway before wrapping up: chat summary, INDEX.md update,
-progress.md entry, bugQueue.md/issues.md sweep, git/CI status.
+**End-of-session checklist:** no `INDEX.md`/`rules.md` in this
+project, so no draft checklist to point to. Informal checklist before
+wrapping up: session summary file, progress.md entry, bugQueue.md/
+issues.md sweep, git/CI status.
