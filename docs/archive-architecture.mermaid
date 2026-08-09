@@ -38,6 +38,11 @@ flowchart TD
         Verify -->|"COMPRESSED → VERIFIED or FAILED\n(reason + prior tool_err combined)"| StateLog
     end
 
+    Retry{{"retry — FAILED file,\nunder retry cap?"}}
+    StateLog -.->|"FAILED, retries remaining"| Retry
+    Retry -->|"yes: recompress"| Compressor
+    Retry -->|"no: cap hit"| GiveUp["leave as FAILED\n(needs manual look)"]
+
     subgraph Pass3["Pass 3: delete"]
         Pass2 --> Delete
         Delete -->|"VERIFIED → DELETED\nonly place an original is removed"| StateLog
