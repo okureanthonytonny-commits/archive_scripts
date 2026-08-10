@@ -6,3 +6,6 @@
 tests/fixtures/**/*.mp4
 tests/fixtures/**/*.webp
 tests/fixtures/**/*.mov
+
+# Scratch patch scripts — self-delete on success, shouldn't persist
+.patches/*
