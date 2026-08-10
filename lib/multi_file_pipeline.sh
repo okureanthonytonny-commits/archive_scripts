@@ -89,9 +89,26 @@ process_month() {
 
   # --- Pass 2: verify ---
   log "--- Pass 2: verify ---"
+  local verify_jobs=0
+  local verify_pids=()
+  local vcount=0
   while IFS= read -r f; do
-    verify "$f"
+    verify "$f" &
+    verify_pids+=("$!")
+    verify_jobs=$((verify_jobs+1))
+    vcount=$((vcount+1))
+    if [ "$verify_jobs" -ge "$MAX_PARALLEL_VERIFY" ]; then
+      wait -n
+      verify_jobs=$((verify_jobs-1))
+    fi
+    if [ $((vcount % 50)) -eq 0 ]; then
+      log "...verify progress: $vcount/$total"
+    fi
   done < "$filelist"
+
+  for pid in "${verify_pids[@]}"; do
+    kill -0 "$pid" 2>/dev/null && wait "$pid"
+  done
   log "Pass 2 complete."
 
   # --- Pass 3: delete ---
