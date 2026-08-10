@@ -104,22 +104,81 @@ contrast is actually needed.
 
 ## Per-session mechanics (must-check every session)
 
-**File delivery:** give file content as a `cat > path << 'EOF' ... EOF`
-command, not just a rendered block — Termux workflow, paste-and-run beats
-copy-paste-into-editor. If the file content itself contains a
-triple-backtick code block, wrap the whole delivery in a 4-backtick outer
-fence instead of 3 (nested 3-tick fences break markdown rendering — see
-QA.md 2026-07-08).
+**Verify the path before patching.** Don't assume a file's location
+from memory, a prior session, or another project's layout — projects
+here have different structures (this bit us: `tone.md` assumed at
+root, actually under `docs/`). `find`/`ls` first, then patch against
+the confirmed path.
 
-**Editing existing files:** default to a `python3 -` heredoc that reads
-the file, checks the old text is present before writing, and aborts with
-no write if it doesn't match exactly — safer than `sed`, since a wrong
-match can corrupt the file silently and the python check just refuses to
-write instead. If that command comes back `ABORT`, don't retry with a
-tweaked match — fall back to a full-file `cat > path << 'EOF'` overwrite
-with the complete new content for that file instead. Full rewrites cost
-real tokens in repetition, so they're a fallback for a proven mismatch,
-not a pre-emptive default based on edit size.
+### File delivery convention
+
+`.patches/` is the default scratch location for one-off delivery/patch
+scripts — never `$HOME` or the project root. That's the one place to
+check for anything mid-run or left behind.
+
+Paths inside a patch script should be relative to `~` (or given in
+full), not relative to whatever directory a prior session said it was
+"in" — that's stale info once a session is cold. `cd ~/project_name`
+first, or use the full path.
+
+**Heredoc delimiter must be unique to the outer shell call** — if the
+content being written itself contains an example heredoc (like the
+skeleton below), give the outer `cat` a different terminator than any
+delimiter appearing inside the content, or bash closes the outer
+heredoc early at the first inner match. (Learned the hard way,
+2026-08-10.)
+
+**New file (nothing to check against):**
+~~~bash
+cat > <path> << 'EOF'
+<content>
+EOF
+~~~
+If `<content>` itself contains a triple-backtick fence, wrap the whole
+delivery in a 4-backtick outer fence instead of 3 — nested 3-tick fences
+break markdown rendering (see QA.md 2026-07-08).
+
+**Editing an existing file — patch script skeleton:**
+~~~bash
+cat > .patches/<name>.py << 'INNER_EOF'
+import subprocess, os
+
+path = "<path, e.g. docs/tone.md>"
+new_fragment = "<unique string only in the NEW state>"
+
+with open(path) as f:
+    content = f.read()
+
+if new_fragment in content:
+    print("SKIPPED (<change name> already present)")
+else:
+    old = '''<exact old text>'''
+    new = '''<exact new text>'''
+
+    if old not in content:
+        print("ABORT (old block not found)")
+    else:
+        content = content.replace(old, new)
+        with open(path, "w") as f:
+            f.write(content)
+        print("WRITTEN (<change name>)")
+
+        subprocess.run(["git", "add", path], check=True)
+        diff = subprocess.run(["git", "diff", "--cached", "--", path], capture_output=True, text=True).stdout
+        if "<new_fragment>" in diff:
+            subprocess.run(["git", "commit", "-m", "<commit message>"], check=True)
+            print("Committed.")
+            os.remove(__file__)
+            print("Patch script removed.")
+        else:
+            print("git diff did not confirm the expected change — not committing.")
+INNER_EOF
+python3 .patches/<name>.py
+~~~
+
+If `ABORT` — don't retry with a tweaked match. Fall back to the
+new-file template above with the complete new content instead. Costs
+more tokens but is safe.
 
 **Idempotency check before any write:** every file-modifying command
 checks for existing evidence of the change *before* writing, by default,
