@@ -8,6 +8,7 @@ STAGING="$HOME/archive_staging"
 ARCHIVES_DIR="/storage/emulated/0/Archives"
 LOG_DIR="$HOME/archive_logs"
 MAX_PARALLEL_VIDEO=2
+MAX_PARALLEL_VERIFY=4
 MIN_FREE_MB=800
 STATE_FILE="$HOME/archive_scripts/.state"
 
