@@ -283,3 +283,33 @@
 - **Trust test: 3/3** (`2026-04`, `2026-01`, `2026-03` all clean).
   `multi_month_zipper.sh` unattended is now viable for the remaining
   months (`2025-12`, `2026-02`).
+
+## 2026-08-10
+- Built `run_overnight.sh`: unattended wrapper — wake-lock, detached
+  `tmux`, self-cleanup (releases wake-lock, kills its own `tmux`
+  server) and a completion notification on finish.
+- Added a circuit-breaker to `multi_month_zipper.sh`: skip an isolated
+  per-month failure and continue; still hard-stop on a systemic one
+  (low disk, anomaly-cancel). New exit code 4 = "completed with
+  skips," distinct from clean success or a real stop.
+- Ran `run_overnight.sh` for real across `2025-12` and `2026-02`,
+  phone locked overnight: 6h59m, both months succeeded, no skips.
+  **Original backlog is now fully archived** (all 5 months).
+- Investigated an apparent process-tree anomaly mid-run (stacked
+  `single_month_zipper.sh` PIDs, 2 concurrent `ffmpeg` jobs) — false
+  alarm, confirmed as intended `MAX_PARALLEL_VIDEO` backgrounding, not
+  a bug.
+- Parallelized Pass 2 (verify) across files, capped by new
+  `MAX_PARALLEL_VERIFY` — same pattern as Pass 1. Real bottleneck was
+  serial process-spawn overhead, not per-file I/O; a proposed
+  intra-file threaded-verification design was correctly rejected
+  before being built, for adding real complexity to solve a problem
+  that didn't exist here.
+- Session-mechanics fixes folded into `tone.md` (both projects):
+  verify-path-before-patching rule, heredoc-delimiter-collision
+  lesson, file-delivery convention rewritten as a literal code
+  template instead of prose. `.patches/` created in `Ledger`,
+  `.gitignore`d in both.
+- `README.md` and `architecture.md` refreshed: usage/status sections
+  corrected, `run_overnight.sh` documented, new storage + notification
+  screenshots.
