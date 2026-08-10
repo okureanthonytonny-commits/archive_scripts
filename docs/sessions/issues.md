@@ -173,6 +173,110 @@
   `multi_month_zipper.sh` unattended is viable for the remaining
   months.
 
+## Resolved this session (2026-08-10)
+
+**1. Unattended overnight run — first real end-to-end, backlog now clear**
+- Built `run_overnight.sh`: wraps `multi_month_zipper.sh`, holds a
+  wake-lock, runs detached in `tmux`, releases the wake-lock and kills
+  its own `tmux` server on finish (so nothing keeps running or
+  draining battery), fires a `termux-notification` on completion if
+  Termux:API is installed.
+- Added a real circuit-breaker to `multi_month_zipper.sh`: an isolated
+  per-month failure (zip creation/verify, exit 1) now skips that month
+  and continues to the next; a systemic failure (low disk space, exit
+  2; anomaly-cancel, exit 3) still stops outright, since continuing
+  would just repeat the same failure for every remaining month. New
+  exit code 4 signals "completed, but with skipped months" distinct
+  from clean success (0) or a hard stop (1/2/3) — `run_overnight.sh`'s
+  notification text was updated to say so rather than reporting a
+  partial run as "OK".
+- Ran it for real across `2025-12` and `2026-02`, unattended, phone
+  locked overnight: 6h59m (03:26:35 → 10:25:12), both months succeeded,
+  no skips. **Every month in the original backlog is now archived**
+  (`2026-01`, `2026-03`, `2026-04`, `2025-12`, `2026-02`).
+
+**2. Process-tree false alarm — investigated, no bug found**
+- Mid-run, `top`/`ps` showed what looked like recursive
+  `single_month_zipper.sh` invocations (3 stacked PIDs per chain) and
+  two concurrent `ffmpeg` processes. Traced fully before touching
+  anything.
+- Explanation: `process_month()` intentionally backgrounds video
+  compression up to `MAX_PARALLEL_VIDEO=2` — two concurrent `ffmpeg`
+  jobs is by design. The stacked `single_month_zipper.sh` entries were
+  `ps` showing a backgrounded shell function's forked subshell under
+  its parent's original command line (same argv, since it's a fork,
+  not a re-exec) — not the script actually calling itself. No fix
+  needed; confirmed the manifest/state log stayed clean throughout
+  (`.state_log.tsv` entries were sequential, no duplicates).
+
+**3. Pass 2 (verify) parallelized — real fix, wrong idea correctly rejected first**
+- Proposed idea (splitting one file's verification into overlapping
+  byte-region threads with cross-checking) was self-rejected before
+  being built, for the right reason: it solves a consistency problem
+  it would itself create, for a benefit that isn't real here — verify
+  reads container metadata / does a size comparison, not a full-file
+  decode, so there's no "portion of the file" that benefits from
+  splitting.
+- Real bottleneck confirmed by reading `verify.sh`: three process
+  spawns per file (`track.py get`, the actual check, `track.py set`),
+  fully serial. February's 100-file Pass 2 took ~5 min — ~3s/file for
+  checks that are each individually near-instant, pointing at spawn
+  overhead, not I/O.
+- Fix: applied the same pattern Pass 1 already uses for video
+  compression — background `verify()` calls across *different* files,
+  capped by new `MAX_PARALLEL_VERIFY` (`common.sh`). Zero consistency
+  risk, since each worker touches a disjoint file. Relies on the same
+  `track.py` atomic-append safety Pass 1's backgrounded jobs already
+  depend on in production — not a new bet. `multi_file_pipeline.sh`'s
+  Pass 3 barrier now also waits on Pass 2's backgrounded jobs, mirroring
+  the existing Pass 1→Pass 2 barrier.
+- Not yet run on a real month — the two months that ran this session
+  predate the patch. First live test is whatever month runs next.
+
+**4. Session-mechanics fixes, folded into `tone.md`**
+- **Heredoc delimiter collision** — a patch script's own outer `cat >
+  ... << 'PATCH_EOF'` was closed early by an identical `PATCH_EOF`
+  appearing inside the example content being delivered (a documented
+  skeleton, not code that ran). Real bug, not a paste error: bash
+  matches the first unindented occurrence of the delimiter regardless
+  of context. Fixed by giving nested example delimiters distinct
+  names from the outer call; now documented in `tone.md` as a
+  requirement, not just a one-off fix.
+- **Verify the path before patching** — `tone.md`'s own file-delivery
+  section was assumed to be at project root once, was actually under
+  `docs/`. `find`/`ls` before patching is now a stated rule, applied
+  in both `archive_scripts` and `Ledger`.
+- **`tone.md`'s file-delivery convention rewritten as a literal code
+  template** (was prose) — a reusable skeleton for both new-file
+  delivery and the idempotency-check/`ABORT`/git-commit/self-delete
+  patch pattern, instead of describing it in words. Same change ported
+  to `Ledger/docs/tone.md`; `.patches/` created there too.
+- **`.patches/` added to `.gitignore`** — by design it should stay
+  empty between sessions (every patch script self-deletes on success);
+  one leftover from an `ABORT`ed README patch (superseded by a manual
+  full-file overwrite once two byte-level mismatches — a stale
+  blank-line count, then an em-dash encoding mismatch from a
+  chat-pasted `sed` copy — made re-matching not worth chasing) was
+  cleaned up and the directory excluded going forward.
+- **Upload over paste, when a patch has already `ABORT`ed once** — a
+  file uploaded directly gives exact bytes; text pasted through chat
+  round-trips through markdown rendering and copy/paste, which is
+  exactly what caused the em-dash mismatch above. Costs fewer tokens
+  too. No formal `tone.md` line for this yet — worth adding next time
+  it comes up.
+
+**5. `README.md` and `architecture.md` refreshed**
+- Usage sections fixed (`multi_month_zipper.sh` takes a month list, not
+  a start/end range — was stale); `run_overnight.sh` documented as a
+  third entry point in both docs.
+- `architecture.md`'s pipeline section now describes two barriers (was
+  one), and Pass 2's new parallelism.
+- Storage screenshots swapped: stale 95%→91% pair replaced with a
+  82% baseline / 96% mid-run-peak pair, captioned to explain the spike
+  as expected (staging + originals briefly coexisting), not a leak.
+  Added a third image showing the `termux-notification` completion
+  alert — a real feature worth showing, not just documenting in text.
+
 ## Open
 
 **1. `2026-03` orphan fold-in — RESOLVED 2026-08-08, see above**
@@ -200,13 +304,13 @@
   each through the real `verify()` — a `VERIFIED` orphan folds
   straight into the zip list, a `FAILED` orphan falls into the same
   retry-with-guard logic now built for gap 1 above. One mechanism, two
-  discovery paths. Not done this session — scoped as the logical next
-  step after retry-on-`FAILED` proved out.
+  discovery paths. Still not done — no longer the single most urgent
+  gap now that the backlog itself is clear, but still real.
 - `.env` for hardcoded paths and config — paths (manifest, staging
   dir, archives dir, `STATE_LOG` default) and Termux-specific shebangs
   are hardcoded across `common.sh`, `track.py`, and the entry scripts.
-  Fine single-device/single-user today; surfaced concretely this
-  session when both `STATE_LOG` and `SCRIPT_DIR` being unexported in a
+  Fine single-device/single-user today; surfaced concretely once
+  already when both `STATE_LOG` and `SCRIPT_DIR` being unexported in a
   fresh shell caused confusing failures (wrong-file reads, "command
   not found") with no signal pointing at the real cause. Related to
   the file-hash-integrity item below — both are "assumes single
@@ -214,26 +318,42 @@
   open-source push.
 - No size-ratio sanity check before delete (verify confirms the output
   decodes, not that it actually shrank meaningfully).
-- Duplicated tmux/wake-lock relaunch logic between the two entry
-  scripts — works, just not shared.
+- No timeout on individual `ffmpeg` calls — a genuinely hung encode
+  (distinct from a slow-but-progressing one, confirmed distinguishable
+  this session by checking source file size against elapsed time)
+  would never be caught by anything currently in the pipeline; it
+  would just occupy a `MAX_PARALLEL_VIDEO` slot indefinitely.
+- Duplicated tmux/wake-lock relaunch logic, now across *three* entry
+  scripts (`single_month_zipper.sh`, `multi_month_zipper.sh`,
+  `run_overnight.sh`, not two) — works in each, just not shared.
 - File-hash integrity checking for scripts, deferred to open-source
   prep (see `ideas.md`).
 - Storage reorg (`archive_*` files out of `$HOME` into a dedicated
-  parent dir) — parked until after the trust test.
+  parent dir) — parked until after the trust test; trust test is now
+  done, so this is unblocked whenever it's next picked up.
 
 ## Status snapshot at handoff
-- 2026-04: fully done (compressed, zipped, verified, staging cleared).
-- 2026-01: fully done (compressed, zipped, verified, staging cleared) —
-  212 files, ~6.4GB, ran clean end-to-end after the bare-`wait` fix.
-- 2099-01 (test month, not real data): fully done, same as above —
-  zip exists in `Archives/`. Its 6 source files are gone (correctly
+- **All 5 months in the original backlog are fully done**: compressed,
+  zipped, verified, staging cleared. `2026-04`, `2026-01`, `2026-03`
+  ran individually across earlier sessions; `2025-12` and `2026-02` ran
+  together, fully unattended, via `run_overnight.sh` this session
+  (6h59m, no skips, no manual intervention).
+- 2099-01 (test month, not real data): fully done, same as above — zip
+  exists in `Archives/`. Its 6 source files are gone (correctly
   deleted); re-running it now tests `MISSING` handling, not a repeat
   smoke test.
-- 2026-03: unblocked as of 2026-08-08 — 75 real orphans folded into
-  manifest + track.py. Ready for `single_month_zipper.sh 2026-03` to
-  complete the month.
-- 2025-12, 2026-02: not started.
-- Trust test result: 2 of 3 months (`2026-04`, `2026-01`) fully clean.
-  `2026-03` is a pass for the tooling itself — reconciliation did
-  exactly what it was built for — but the month is not yet complete.
-  `multi_month_zipper.sh` unattended still pending full 3/3.
+- Trust test: **3/3**, and now proven at the unattended-multi-month
+  level too, not just single-month. The specific "can this run
+  unattended overnight" question this trust test existed to answer is
+  closed.
+- Pass 2 (verify) is now backgrounded across files
+  (`MAX_PARALLEL_VERIFY`), same pattern as Pass 1's video compression
+  — not yet exercised on a real month, since both months this session
+  predate the patch.
+- Circuit-breaker (skip isolated month failures, stop on systemic
+  ones) is live in `multi_month_zipper.sh` but has never actually
+  fired for real — both months this session succeeded outright. Still
+  unverified in practice, only by code reading.
+- No months remain in the original backlog. Future runs are new data
+  going forward, not backlog clearance — a different mode than every
+  session so far.
