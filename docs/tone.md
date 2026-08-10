@@ -184,3 +184,13 @@ it matters.
 project, so no draft checklist to point to. Informal checklist before
 wrapping up: session summary file, progress.md entry, bugQueue.md/
 issues.md sweep, git/CI status.
+
+**JWT territory:** we never build within one continuous context
+window — each session/chat starts cold. So every patch script, log
+message, exit code, and commit message needs to carry enough of its
+own context to be understood on its own, like a JWT carries its own
+claims instead of relying on server-side session state. Don't write
+something that only makes sense if the reasoning from *this* chat is
+still in the room — a future session (or future Tonny at 6am) should
+be able to read a log line or commit message cold and know what
+happened and why, without re-deriving it.
