@@ -180,6 +180,24 @@ If `ABORT` — don't retry with a tweaked match. Fall back to the
 new-file template above with the complete new content instead. Costs
 more tokens but is safe.
 
+**Before falling back, check for invisible byte drift** — a block that
+looks identical in plain `sed`/`view` output can still fail an exact
+match on trailing whitespace or non-ASCII characters (curly quotes, em
+dashes) that don't render visibly. `sed -n '<range>p' <path> | cat -A`
+shows both: `$` marks real line-ends (so a `  $` reveals trailing
+spaces `sed` alone hides), and non-ASCII bytes show as `M-x` escapes
+instead of the character itself (an em dash `—` showed as
+`M-bM-^@M-^T` this way once, confirming the mismatch instead of
+guessing at it).
+
+**If the content was pasted through chat rather than read straight from
+source, re-upload the file instead of re-pasting.** A paste round-trips
+through markdown rendering and copy/paste — exactly what introduces
+that kind of drift. A direct upload gives exact bytes and costs fewer
+tokens than a `cat -A` dump. Two `ABORT`s is the signal to stop chasing
+an exact match entirely and go straight to the full-file overwrite —
+not to try a third, more-careful match.
+
 **Idempotency check before any write:** every file-modifying command
 checks for existing evidence of the change *before* writing, by default,
 not as an opt-in. For match-based edits: search for a unique fragment of
