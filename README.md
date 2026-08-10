@@ -1,8 +1,8 @@
 # archive_scripts
 
-Compresses phone media of a specified month, or a start-and-end range of
-months, to usable quality. Deletes originals only once the compressed
-copy is verified, then zips the result. Runs entirely in Termux, no PC
+Compresses phone media of a specified month, or a list of months, to
+usable quality. Deletes originals only once the compressed copy is
+verified, then zips the result. Runs entirely in Termux, no PC
 involved.
 
 - [Why this exists](#why-this-exists)
@@ -20,17 +20,27 @@ Kept direct on purpose — this is reasoning, not a pitch.
 
   
 
-![Internal storage at 95% used, 30 Jul 2026](docs/images/storage-before-95-percent.jpg)
+
+
+![Internal storage baseline, 82% used, 10 Aug 2026](docs/images/storage-baseline-82-percent.jpg)
+
+
 
 
   
 
-![Internal storage at 91% used, 9 Aug 2026](docs/images/storage-after-91-percent.jpg)
+
+
+![Internal storage mid-run peak, 96% used, 10 Aug 2026](docs/images/storage-staging-peak-96-percent.jpg)
 
 
 
-  95% → 91%, after two months compressed so far. More checks are still
-  running before the rest of the backlog gets zipped unattended.
+
+
+  82% resting state, spiking to 96% mid-run — staging and originals
+  briefly coexist until each file is verified and the original is
+  deleted. Staging clears back down after every run; the peak is
+  expected, not a leak.
 - Two standard options, used together instead of picking one:
   - **Backup then delete.** Tradeoff: pulling data back later still
     costs data and time, even on cheap/zero-egress storage. Backup
@@ -62,41 +72,61 @@ a mystery.
 Dependencies (confirmed by grepping the actual scripts for external
 command calls):
 
-```
+~~~
 pkg install python tmux termux-api ffmpeg webp zip unzip
-```
+~~~
 
 `termux-api` also needs the **Termux:API** companion app installed
-separately (F-Droid) for `termux-wake-lock` to work.
+separately (F-Droid) for `termux-wake-lock` and `termux-notification` to
+work.
 
 Clone (needs `git`, not a pipeline dependency, just how you get the code)
 and run:
 
-```
+~~~
 git clone https://github.com/okureanthonytonny-commits/archive_scripts
 cd archive_scripts
 ./single_month_zipper.sh 2026-01
-```
+~~~
 
 ## Usage
 
 - `single_month_zipper.sh <YYYY-MM>` — compress, verify, delete-if-
   verified, zip one month.
-- `multi_month_zipper.sh <start> <end>` — same, looped over a range of
-  months.
+- `multi_month_zipper.sh <YYYY-MM> [<YYYY-MM> ...]` — same, looped over
+  a list of months. Skips a month whose zip already exists; on a real
+  per-month failure, skips that month and continues (isolated fault),
+  but stops outright on a systemic one (low disk space, or an
+  anomaly-cancel choice) rather than repeating the same failure for
+  every remaining month.
+- `run_overnight.sh [<YYYY-MM> ...]` — wraps `multi_month_zipper.sh` for
+  unattended runs: holds a wake-lock, runs detached in `tmux`, and on
+  finish releases the wake-lock and kills its own `tmux` server so
+  nothing keeps running or draining battery. If `termux-notification`
+  is installed, it also fires a completion notification — useful since
+  the whole point is not needing to check on it:
 
-Both self-relaunch into a detached `tmux` session with a wake-lock, so a
-run survives Termux getting backgrounded or the screen locking. Full
-pipeline detail is in [Docs](#docs) below.
+  
+
+![Overnight run finished notification](docs/images/overnight-run-notification.jpg)
+
+
+
+All three self-relaunch into a detached `tmux` session with a wake-lock
+if not already inside one, so a run survives Termux getting
+backgrounded or the screen locking. Full pipeline detail is in
+[Docs](#docs) below.
 
 ## Status
 
-Actively in use, not a finished tool. Two months (`2026-01`, `2026-04`)
-have run clean end-to-end on real device data — confirmed by hand each
-time, not yet trusted to run the rest of the backlog unattended.
-`2026-03` — the one that originally exposed most of the bugs below — is
-unblocked and next in line. The rest of the backlog (five months,
-~38GB) follows after that.
+Actively in use, not a finished tool, but the original backlog is
+clear. Every real month (`2026-01`, `2026-03`, `2026-04`, `2025-12`,
+`2026-02`) has now run end-to-end on real device data — the last two
+(`2025-12`, `2026-02`) via a fully unattended overnight `run_overnight.sh`
+run, after a 3/3 trust test on the other three confirmed unattended
+mode was safe.
+
+
 
 
 
@@ -104,10 +134,15 @@ unblocked and next in line. The rest of the backlog (five months,
 
 
 
+
+
 (`January-2099.zip` is test fixture data, not a real month.)
 
-Retry-on-failure exists now: a file that fails verify gets recompressed
+Retry-on-failure exists: a file that fails verify gets recompressed
 automatically up to a cap before it's given up on as a real failure.
+Pass 2 (verify) now also runs several files concurrently
+(`MAX_PARALLEL_VERIFY`, same pattern as Pass 1's video compression),
+since verify was serial-dispatch-bound, not I/O-bound.
 
 ## Known gaps
 
@@ -116,6 +151,9 @@ automatically up to a cap before it's given up on as a real failure.
 - Paths and config are hardcoded for this one device. Fine for now,
   would need an `.env` before this runs anywhere else.
 - Only proven under Termux/Android. Never tried in a plain Linux shell.
+- No timeout on individual `ffmpeg` calls — a genuinely hung encode
+  (distinct from a slow-but-progressing one) would never be caught.
+  See `docs/sessions/issues.md`.
 
 ## Docs
 
