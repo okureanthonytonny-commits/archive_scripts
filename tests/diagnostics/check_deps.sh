@@ -1,20 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# tests/diagnostics/check_deps.sh — confirm required external binaries
-# are on PATH before a pipeline run. Data-driven: add/remove commands
-# in the arrays below, one loop checks all of them.
-#
-# REQUIRED_CMDS: pipeline fails without these (see README "Getting started").
-# OPTIONAL_CMDS: needed for unattended/overnight runs (termux-wake-lock,
-#   termux-notification) but require the separate Termux:API companion
-#   app (F-Droid), not just `pkg install` -- missing these degrades
-#   gracefully rather than breaking the run, so they're flagged, not fatal.
-#
-# Interactive: for each missing REQUIRED command, offers to
-# `pkg install` its package right now (y/N). OPTIONAL commands are
-# never offered for auto-install -- termux-wake-lock/termux-notification
-# come from the termux-api package, but also need the Termux:API
-# companion app from F-Droid, which pkg can't install, so a partial
-# `pkg install` fix would be misleading.
+# tests/diagnostics/check_deps.sh -- checks required/optional external deps, interactive install prompts.
 
 set -uo pipefail
 
