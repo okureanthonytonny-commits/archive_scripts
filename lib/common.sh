@@ -3,14 +3,17 @@
 # Sourced by single_month_zipper.sh (and indirectly by multi_month_zipper.sh).
 # Not meant to be run directly.
 
-MANIFEST="$HOME/archive_manifest.tsv"
-STAGING="$HOME/archive_staging"
-ARCHIVES_DIR="/storage/emulated/0/Archives"
-LOG_DIR="$HOME/archive_logs"
-MAX_PARALLEL_VIDEO=2
-MAX_PARALLEL_VERIFY=4
-MIN_FREE_MB=800
-STATE_FILE="$HOME/archive_scripts/.state"
+[ -f "$SCRIPT_DIR/.env" ] && source "$SCRIPT_DIR/.env"
+
+MANIFEST="${MANIFEST:-$HOME/archive_manifest.tsv}"
+STAGING="${STAGING:-$HOME/archive_staging}"
+ARCHIVES_DIR="${ARCHIVES_DIR:-/storage/emulated/0/Archives}"
+LOG_DIR="${LOG_DIR:-$HOME/archive_logs}"
+MAX_PARALLEL_VIDEO="${MAX_PARALLEL_VIDEO:-2}"
+MAX_PARALLEL_VERIFY="${MAX_PARALLEL_VERIFY:-4}"
+MIN_FREE_MB="${MIN_FREE_MB:-800}"
+STATE_FILE="${STATE_FILE:-$HOME/archive_scripts/.state}"
+export STATE_LOG="${STATE_LOG:-$HOME/archive_scripts/.state_log.tsv}"
 
 mkdir -p "$ARCHIVES_DIR" "$LOG_DIR" "$HOME/.archive_tmp"
 
