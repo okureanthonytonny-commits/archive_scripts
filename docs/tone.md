@@ -121,12 +121,16 @@ full), not relative to whatever directory a prior session said it was
 "in" — that's stale info once a session is cold. `cd ~/project_name`
 first, or use the full path.
 
-**Heredoc delimiter must be unique to the outer shell call** — if the
-content being written itself contains an example heredoc (like the
-skeleton below), give the outer `cat` a different terminator than any
-delimiter appearing inside the content, or bash closes the outer
-heredoc early at the first inner match. (Learned the hard way,
-2026-08-10.)
+**Heredoc delimiter must be unique to the outer shell call, and unique
+to the whole payload** — not just "different from EOF." If the file
+being delivered is itself documentation that *shows* heredoc examples
+(like this file), its body contains the literal text `EOF`/`INNER_EOF`
+as example strings — using either as the real delimiter closes the
+heredoc early the instant bash scans past that example line, and
+everything after gets typed as raw shell input. (Learned the hard way
+twice, 2026-08-10 and 2026-08-12.) Pick a delimiter guaranteed absent
+from the payload itself, e.g. a short random suffix, not just a
+different reserved word.
 
 **New file (nothing to check against):**
 ~~~bash
@@ -271,3 +275,13 @@ something that only makes sense if the reasoning from *this* chat is
 still in the room — a future session (or future Tonny at 6am) should
 be able to read a log line or commit message cold and know what
 happened and why, without re-deriving it.
+
+**Script header comments — keep to one line.** Patch scripts do
+targeted match-and-replace on code, not prose, so a multi-line header
+explaining why/how silently goes stale the next time the code changes
+and the patch doesn't also touch the comment — stale comments next to
+stale docs is more junk to sort, not less. Keep script headers to one
+line (what the file is). Point anywhere else that needs explanation at
+docs/ instead. Exception: a comment sitting right next to the specific
+line of code it explains stays — that's cheap to keep in sync since
+editing the code and the comment happen in the same patch.
