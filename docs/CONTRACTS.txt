@@ -26,6 +26,13 @@ Calls:
   - process_month "$FILELIST" "$MONTH_STAGE"              [by name]
   - python3 "$SCRIPT_DIR/lib/summary.py" ... > FILE_LOG    [by path]
 
+## build_manifest.sh
+Run by hand: `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS] DIR [DIR2 ...]`
+Sources: nothing
+Calls: nothing
+Writes: archive_manifest.tsv (read by single_month_zipper.sh, by path,
+  via $MANIFEST in lib/common.sh)
+
 ## lib/common.sh
 Exposes (by name — renaming this FILE is safe, function names aren't):
   - log(), set_state(), check_space(), check_space_for_zip(),
