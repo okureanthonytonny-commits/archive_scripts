@@ -9,3 +9,4 @@ tests/fixtures/**/*.mov
 
 # Scratch patch scripts — self-delete on success, shouldn't persist
 .patches/*
+\n.env\n
