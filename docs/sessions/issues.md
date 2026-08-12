@@ -277,6 +277,36 @@
   Added a third image showing the `termux-notification` completion
   alert — a real feature worth showing, not just documenting in text.
 
+## Resolved this session (2026-08-12)
+
+**1. Post-write `git diff` confirmation string spanned a line-wrap — false "did not confirm", correct write already landed**
+- A patch script's post-write check searched `git diff --cached` for a
+  single-line fragment, but the actual written content wrapped across
+  two lines at that exact point (a backticked filename and an em dash,
+  then a line break before the next word). The edit itself was
+  correct and already staged; only the confirmation string was wrong,
+  so the script printed "git diff did not confirm the expected
+  change -- not committing" and left the file staged-but-uncommitted.
+- Recovered by checking `git status`/`git diff --cached` directly
+  instead of re-running the write, then committing manually once the
+  diff was confirmed by eye.
+- Lesson: post-write confirmation fragments must be guaranteed
+  single-line -- pulled from a line that won't wrap in the actual
+  output -- not assembled from prose that might.
+
+**2. Heredoc delimiter collision recurred -- this time the payload itself was the culprit**
+- Same underlying bug as 2026-08-10 (item 4), new trigger: delivering
+  `tone.md` wrapped in `INNER_EOF`, when `tone.md`'s own body contains
+  the literal text `EOF`/`INNER_EOF` as example strings (its own
+  patch-script template documentation). The outer heredoc closed
+  early at the first inner match, dumping the rest of the payload as
+  raw shell input at the terminal.
+- `tone.md`'s delimiter-collision rule rewritten to be explicit the
+  check is "delimiter absent from the whole payload," not just
+  "different from `EOF`" -- self-documenting files that show heredoc
+  examples are the case most likely to trip this, and this file is
+  exactly that case.
+
 ## Open
 
 **1. `2026-03` orphan fold-in — RESOLVED 2026-08-08, see above**
