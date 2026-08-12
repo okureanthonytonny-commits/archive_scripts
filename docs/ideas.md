@@ -148,3 +148,18 @@ As an extra, I decided to package the data on a monthly basis just to make sure 
 The screenshot is of my files app fresh today 10am 9th August 2026. Only one month has been successfully compressed, verified, packaged, originals deleted with logging at each stage for tracing anomalies.
 
 ---
+\n
+---
+
+## 2026-08-12 — File-hash integrity check, deferred as over-engineering for current repo size
+
+Scoped a hash-check design (git-tracked file_hashes.tsv, sha256 via
+python3, separate deliberate regen step, mismatch pointing at git log
+-p to distinguish own edits from unexpected changes) to protect
+against a rogue/malicious code swap in a required file -- the axios/
+event-stream/ua-parser-js style supply-chain case. Decided against
+building it now: repo has 2 stars, low realistic risk at this scale,
+and check_files.sh's existence-check already covers the more likely
+failure (a file missing or reverted, not tampered with). Revisit if
+the repo gets real outside attention, or per the existing "before any
+open-source push" note this was already tied to in issues.md.
