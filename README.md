@@ -86,11 +86,15 @@ and run:
 ~~~
 git clone https://github.com/okureanthonytonny-commits/archive_scripts
 cd archive_scripts
+./build_manifest.sh -a 90 /path/to/source/dir1 /path/to/source/dir2
 ./single_month_zipper.sh 2026-01
 ~~~
 
 ## Usage
 
+- `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS] DIR [DIR2 ...]` —
+  scan directories, (re)build/extend `archive_manifest.tsv`. Safe to
+  re-run: skips paths already recorded.
 - `single_month_zipper.sh <YYYY-MM>` — compress, verify, delete-if-
   verified, zip one month.
 - `multi_month_zipper.sh <YYYY-MM> [<YYYY-MM> ...]` — same, looped over
