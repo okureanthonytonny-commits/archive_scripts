@@ -326,3 +326,27 @@ only fires on the `WRITTEN`-and-committed branch. Every terminal
 outcome -- `WRITTEN`+committed, `SKIPPED`, or confirmed-already-in-sync
 -- should remove the script; only `ABORT` (something didn't match,
 needs a human look) should leave it behind for inspection.
+
+**Large file content: stage it as its own heredoc, don't embed it as
+one giant Python string.** A full-file overwrite embedded as a single
+`new_content = '...'` line (one long line, thousands of characters)
+is fragile to paste into a mobile terminal -- Termux choked on one
+this size with a raw `SyntaxError`, the line itself got corrupted in
+transit (2026-08-13). Fix: two short delivery blocks instead of one --
+(1) `cat > .patches/<name>_content.<ext> << 'CONTENT_EOF' ... CONTENT_EOF`
+writes the actual file content as a normal multi-line heredoc (many
+ordinary-length lines, not one huge one), (2) a short Python wrapper
+reads that staged file, does the usual SKIPPED/WRITTEN/git logic, then
+deletes the staging file alongside itself. Applies once a full-file
+overwrite gets large -- small match-and-replace patches with short
+`old`/`new` blocks are fine as single Python strings, this is only for
+substantial full-file deliveries.
+
+**Do not use base64 or other encoding tricks to work around a paste/
+delivery problem.** Tried once for a similar corruption issue -- it
+made the message look like it was hiding code from inspection, which
+tripped a safety classifier and caused a model fallback mid-session
+(cost: the session's continuity). Any future delivery-friction problem
+gets solved with plain, readable text (like the staged-heredoc
+approach above), never obfuscation, even when the intent is entirely
+benign.
