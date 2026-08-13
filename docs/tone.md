@@ -285,3 +285,27 @@ line (what the file is). Point anywhere else that needs explanation at
 docs/ instead. Exception: a comment sitting right next to the specific
 line of code it explains stays — that's cheap to keep in sync since
 editing the code and the comment happen in the same patch.
+
+**Quoted heredocs pass content through byte-for-byte — no bash-level
+escaping to double up for.** `<< 'INNER_EOF'` (quoted delimiter) turns
+off all shell interpretation inside the block, so whatever characters
+appear in the delivered message land in the file exactly as typed. A
+Python string literal like `"\\n"` written inside that block needs a
+*single* backslash to become a real newline when Python parses it --
+writing `"\\n"` (doubled, out of habit from contexts that do need
+escaping) produces the literal two-character text `\\n` in the
+written file instead of a newline. Caused a real bug: `.gitignore`
+got a literal `\\n.env\\n` string appended instead of `.env` on its
+own line (2026-08-12). Check heredoc-delivered file output for stray
+literal `\\n`/`\\t` text as part of the normal post-write sanity look,
+not just `bash -n`/syntax checks -- syntax checks don't catch a
+malformed *data* file like `.gitignore`.
+
+**`SKIPPED` and no-diff outcomes should self-delete too, not just
+`WRITTEN`.** A patch script that correctly determines "nothing to do"
+(the change was already applied, or the working file already matches
+`HEAD`) still leaves itself sitting in `.patches/` if the cleanup step
+only fires on the `WRITTEN`-and-committed branch. Every terminal
+outcome -- `WRITTEN`+committed, `SKIPPED`, or confirmed-already-in-sync
+-- should remove the script; only `ABORT` (something didn't match,
+needs a human look) should leave it behind for inspection.
