@@ -152,8 +152,9 @@ since verify was serial-dispatch-bound, not I/O-bound.
 
 - No automatic reconciliation on orphaned staged files — they're
   detected, but a human still has to look at each one.
-- Paths and config are hardcoded for this one device. Fine for now,
-  would need an `.env` before this runs anywhere else.
+- Paths and config are read from `.env` (see `.env.example`) via
+  `lib/config.sh`, so another device just needs its own `.env` —
+  no code changes.
 - Only proven under Termux/Android. Never tried in a plain Linux shell.
 - No timeout on individual `ffmpeg` calls — a genuinely hung encode
   (distinct from a slow-but-progressing one) would never be caught.
