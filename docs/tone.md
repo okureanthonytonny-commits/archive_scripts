@@ -155,6 +155,7 @@ with open(path) as f:
 
 if new_fragment in content:
     print("SKIPPED (<change name> already present)")
+    os.remove(__file__)
 else:
     old = '''<exact old text>'''
     new = '''<exact new text>'''
@@ -172,13 +173,29 @@ else:
         if "<new_fragment>" in diff:
             subprocess.run(["git", "commit", "-m", "<commit message>"], check=True)
             print("Committed.")
+            subprocess.run(["git", "push"], check=True)
+            print("Pushed.")
             os.remove(__file__)
             print("Patch script removed.")
+        elif diff.strip() == "":
+            print("Already matches HEAD -- nothing new to commit.")
+            os.remove(__file__)
         else:
             print("git diff did not confirm the expected change — not committing.")
 INNER_EOF
 python3 .patches/<name>.py
 ~~~
+
+**Every commit ends with a push.** `git push` runs as the last step of
+a successful patch script (after commit, before self-delete) --
+`origin/main` stays in sync with the local repo by default, not as a
+separate manual step at session end. This also means Claude can read
+the current state of any file straight from GitHub instead of asking
+for a re-upload -- repo:
+`https://github.com/okureanthonytonny-commits/archive_scripts`.
+Fetching `github.com/.../tree/...` pages is blocked by GitHub's robots
+rules; `raw.githubusercontent.com/<owner>/<repo>/main/<path>` works
+directly and is preferred.
 
 If `ABORT` — don't retry with a tweaked match. Fall back to the
 new-file template above with the complete new content instead. Costs
