@@ -27,17 +27,33 @@ Calls:
   - python3 "$SCRIPT_DIR/lib/summary.py" ... > FILE_LOG    [by path]
 
 ## build_manifest.sh
-Run by hand: `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS] DIR [DIR2 ...]`
-Sources: nothing
+Run by hand: `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS]
+  [--exclude PATH ...] [DIR [DIR2 ...]]`
+Sources:
+  - "$SCRIPT_DIR/lib/config.sh"                          [by path]
 Calls: nothing
+Reads: $INCLUDE_DIRS/$EXCLUDE_DIRS from lib/config.sh -- used as the
+  default DIR list when none given on the command line; positional
+  DIR args override INCLUDE_DIRS entirely; --exclude merges with
+  EXCLUDE_DIRS (path-prefix match against each file's absolute path)
 Writes: archive_manifest.tsv (read by single_month_zipper.sh, by path,
-  via $MANIFEST in lib/common.sh)
+  via $MANIFEST in lib/config.sh)
+
+## lib/config.sh
+Exposes (env vars, exported): MANIFEST, STAGING, ARCHIVES_DIR,
+  LOG_DIR, MAX_PARALLEL_VIDEO, MAX_PARALLEL_VERIFY, MIN_FREE_MB,
+  STATE_FILE, STATE_LOG, INCLUDE_DIRS, EXCLUDE_DIRS
+Sources: "$SCRIPT_DIR/.env" if present                    [by path]
+Depends on: $SCRIPT_DIR being set by the caller before sourcing
+Called (sourced) by: lib/common.sh, build_manifest.sh
 
 ## lib/common.sh
 Exposes (by name — renaming this FILE is safe, function names aren't):
   - log(), set_state(), check_space(), check_space_for_zip(),
     month_to_zipname()
-Depends on: nothing
+Sources:
+  - "$SCRIPT_DIR/lib/config.sh"                          [by path]
+Depends on: $SCRIPT_DIR being set by the caller before sourcing
 
 ## lib/single_file_compressor.sh   (was lib/compress.sh)
 Exposes: compressor_process()          [called by name, from multi_file_pipeline.sh]
