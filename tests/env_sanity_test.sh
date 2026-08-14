@@ -21,10 +21,11 @@ echo
 echo "Enter your real source directories, one per line (up to 4). Blank line to stop."
 DIRS=()
 while [ "${#DIRS[@]}" -lt 4 ]; do
-  read -r -p "Dir $(( ${#DIRS[@]} + 1 )): " d
+  read -r -p "Dir $(( ${#DIRS[@]} + 1 )) (e.g. /storage/emulated/0/DCIM/Camera or ~/storage/dcim/Camera): " d
   [ -z "$d" ] && break
+  d="${d/#\~/$HOME}"
   if [ ! -d "$d" ]; then
-    echo "  WARNING: '"'"'$d'"'"' is not a directory (skipping)"
+    echo "  WARNING: '$d' is not a directory (skipping)"
     continue
   fi
   DIRS+=("$d")
@@ -39,9 +40,10 @@ echo
 echo "Directories collected: ${DIRS[*]}"
 echo
 
-read -r -p "Enter a subfolder to test --exclude against (e.g. a WhatsApp media path): " EXCLUDE_TARGET
+read -r -p "Enter a subfolder to test --exclude against (e.g. /storage/emulated/0/DCIM/Camera/WhatsApp or ~/storage/dcim/Camera/WhatsApp): " EXCLUDE_TARGET
+EXCLUDE_TARGET="${EXCLUDE_TARGET/#\~/$HOME}"
 if [ ! -d "$EXCLUDE_TARGET" ]; then
-  echo "WARNING: '"'"'$EXCLUDE_TARGET'"'"' is not a directory -- exclude tests will likely show 0 matches."
+  echo "WARNING: '$EXCLUDE_TARGET' is not a directory -- exclude tests will likely show 0 matches."
 fi
 
 EXCLUDE_REL="$EXCLUDE_TARGET"
@@ -115,7 +117,7 @@ echo
 echo "===== Case 9: manifest sanity check ====="
 echo "Rows in $DUMMY_MANIFEST: $(wc -l < "$DUMMY_MANIFEST" 2>/dev/null || echo 0)"
 echo "First 10 rows:"
-column -t -s $'"'"'\t'"'"' "$DUMMY_MANIFEST" 2>/dev/null | head -10
+column -t -s $'\t' "$DUMMY_MANIFEST" 2>/dev/null | head -10
 
 echo
 echo "Any excluded path leaked through?"
