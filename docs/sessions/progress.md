@@ -313,3 +313,46 @@
 - `README.md` and `architecture.md` refreshed: usage/status sections
   corrected, `run_overnight.sh` documented, new storage + notification
   screenshots.
+
+## 2026-08-13
+- Added `.env` support: `lib/config.sh` reads `.env` (template at
+  `.env.example`), exports every config var with its prior hardcoded
+  value as the fallback, so nothing breaks with no `.env` present.
+  `common.sh` now sources `config.sh` for config instead of inlining
+  it -- kept to logging/disk-safety functions only, on request (config
+  reading is its own concern, not `common.sh`'s).
+- Built two standalone preflight diagnostics: `check_deps.sh`
+  (external binaries on PATH, interactive y/n install prompts) and
+  `check_files.sh` (required repo files present, prints
+  git checkout/git status recovery steps if not). Deliberately
+  separate scripts -- dependency drift and code drift fail differently
+  and want different fixes.
+- `build_manifest.sh`: added `--exclude PATH` (repeatable) and
+  `INCLUDE_DIRS`/`EXCLUDE_DIRS` in `.env` as the default when no
+  positional DIR args are given. Motivated by a real gap: WhatsApp
+  media saved into `DCIM/Camera` would get swept into the manifest
+  despite intent to skip WhatsApp entirely, since only directory
+  inclusion existed, no exclusion. Local sandbox testing caught a real
+  bug before it shipped -- --exclude silently no-op'd when given an
+  absolute path against a relative-path directory scan (or vice
+  versa); fixed by resolving both to absolute paths before matching,
+  which also fixed a latent dedup inconsistency for re-scanning the
+  same directory in different relative/absolute forms.
+- File-hash integrity checking (open item since 2026-08-03) scoped in
+  detail, then deliberately deferred -- over-engineering for a 2-star
+  repo at current risk level. Logged to ideas.md instead of built.
+- CONTRACTS.txt/README.md updated same-session for the .env/config.sh
+  change; architecture.md and the mermaid diagram found stale during a
+  doc-audit pass and queued for next session rather than fixed
+  immediately, given .env's two entries were judged higher priority to
+  land same-session.
+- Delivery-mechanics lesson: a large full-file overwrite embedded as
+  one long Python string line corrupted on paste into the Termux
+  terminal. Fixed by splitting delivery into a staged multi-line
+  heredoc (the actual file content) plus a short Python wrapper doing
+  only the SKIPPED/WRITTEN/git logic -- folded into tone.md as the
+  standard approach for large file deliveries going forward. Also
+  explicitly ruled out base64/encoding workarounds for paste-corruption
+  issues (tripped a safety classifier once before, cost a model
+  fallback mid-session) -- plain staged text only, even under delivery
+  friction.

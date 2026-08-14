@@ -336,16 +336,18 @@
   retry-with-guard logic now built for gap 1 above. One mechanism, two
   discovery paths. Still not done — no longer the single most urgent
   gap now that the backlog itself is clear, but still real.
-- `.env` for hardcoded paths and config — paths (manifest, staging
-  dir, archives dir, `STATE_LOG` default) and Termux-specific shebangs
-  are hardcoded across `common.sh`, `track.py`, and the entry scripts.
-  Fine single-device/single-user today; surfaced concretely once
-  already when both `STATE_LOG` and `SCRIPT_DIR` being unexported in a
-  fresh shell caused confusing failures (wrong-file reads, "command
-  not found") with no signal pointing at the real cause. Related to
-  the file-hash-integrity item below — both are "assumes single
-  trusted environment" gaps, worth doing together before any
-  open-source push.
+- `.env` for hardcoded paths and config — RESOLVED 2026-08-13.
+  `lib/config.sh` now reads `.env` (see `.env.example`) and exports
+  every config var with its existing hardcoded value as the fallback
+  default; `common.sh` and `build_manifest.sh` both source it instead
+  of inlining vars. Also picked up an unplanned extension:
+  `INCLUDE_DIRS`/`EXCLUDE_DIRS` in `.env`, plus a new `--exclude` flag
+  on `build_manifest.sh` (path-prefix match), so a file living inside
+  an otherwise-included directory (e.g. WhatsApp media saved into
+  `DCIM/Camera`) can be excluded without restructuring the include
+  list. File-hash integrity (the related "single trusted environment"
+  item) was scoped in the same session and deliberately deferred as
+  over-engineering at current repo size -- see `ideas.md` 2026-08-12.
 - No size-ratio sanity check before delete (verify confirms the output
   decodes, not that it actually shrank meaningfully).
 - No timeout on individual `ffmpeg` calls — a genuinely hung encode
@@ -361,6 +363,17 @@
 - Storage reorg (`archive_*` files out of `$HOME` into a dedicated
   parent dir) — parked until after the trust test; trust test is now
   done, so this is unblocked whenever it's next picked up.
+
+**5. Docs fell behind the `.env`/`config.sh` change -- partially fixed, two left**
+- `CONTRACTS.txt` and `README.md` updated same-session (config.sh
+  entry added, `common.sh`/`build_manifest.sh` entries corrected).
+- Still stale, queued for next session:
+  - `docs/architecture.md`'s File reference table still describes
+    `common.sh` as `config, log(), set_state(), check_space()` and
+    doesn't list `build_manifest.sh` or `lib/config.sh` at all.
+  - `docs/archive-architecture.mermaid` has the same stale `Common`
+    node label, no `config.sh` node, and no `build_manifest.sh` entry
+    point -- doesn't show how the manifest actually gets built anymore.
 
 ## Status snapshot at handoff
 - **All 5 months in the original backlog are fully done**: compressed,
