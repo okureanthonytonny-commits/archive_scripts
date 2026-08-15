@@ -92,11 +92,15 @@ cd archive_scripts
 
 ## Usage
 
-- `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS] [--exclude PATH ...]
-  [DIR [DIR2 ...]]` — scan directories, (re)build/extend
-  `archive_manifest.tsv`. Safe to re-run: skips paths already
-  recorded. Omit DIR args to fall back to `INCLUDE_DIRS` in `.env`;
-  `--exclude` merges with `EXCLUDE_DIRS` in `.env`.
+- `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS] [--include DIR ...]
+  [--exclude DIR ...] [DIR [DIR2 ...]]` — scan directories, (re)build/
+  extend `archive_manifest.tsv`. Safe to re-run: skips paths already
+  recorded. `--include`/`--exclude` are mode switches, not one-value
+  flags — bare dirs before either one are implicitly `--include`; any
+  dir after a switch keeps going to that list until the other switch
+  appears, in any order. Omit all dirs to fall back to `INCLUDE_DIRS`
+  in `.env`; any include on the command line replaces it entirely.
+  `--exclude` values always merge with `EXCLUDE_DIRS` in `.env`.
 - `single_month_zipper.sh <YYYY-MM>` — compress, verify, delete-if-
   verified, zip one month.
 - `multi_month_zipper.sh <YYYY-MM> [<YYYY-MM> ...]` — same, looped over
