@@ -28,6 +28,18 @@ not next)
 
 ## Resolved
 
+- [resolved 2026-08-15] `build_manifest.sh`'s `--exclude` flag errored
+  with `not a directory: --exclude` whenever it came after a
+  positional directory argument (`DIR --exclude PATH` failed;
+  `--exclude PATH DIR` worked). Root cause: the strict-`getopts`-style
+  parser's `*) break` on the first non-flag token stopped reading
+  flags entirely, so a later `--exclude` fell into the directory list
+  instead of being parsed. Found during a real-device sanity run
+  (`tests/env_sanity_test.sh` cases 4/5), reproduced live in sandbox
+  first. Fixed by redesigning `--include`/`--exclude` as
+  order-independent mode switches instead of single-value flags — see
+  `docs/CONTRACTS.txt` for the new semantics, `docs/sessions/issues.md`
+  2026-08-15 for the full design/testing writeup.
 - [resolved 2026-08-07] Two files in `2026-03` (`20260324_080113.mp4`,
   `20260324_080046.mp4`) failed the `ffprobe` duration check in Pass 2
   verify (`moov atom not found`). Root cause: interrupted/truncated

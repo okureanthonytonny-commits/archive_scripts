@@ -356,3 +356,67 @@
   issues (tripped a safety classifier once before, cost a model
   fallback mid-session) -- plain staged text only, even under delivery
   friction.
+
+## 2026-08-15
+- Real-device `.env`/`--exclude` sanity test (queued since 2026-08-13)
+  found a genuine bug: `build_manifest.sh`'s arg parser stopped
+  reading flags at the first positional directory (classic
+  strict-`getopts` `*) break` pattern), so `DIR --exclude PATH` errored
+  with `not a directory: --exclude` -- `--exclude` only worked if it
+  came *before* any positional dirs. Reproduced live in sandbox before
+  touching device code.
+- Redesigned `--include`/`--exclude` as order-independent mode
+  switches rather than single-value flags (Tonny's design): a bare
+  positional arg goes to whichever list is currently active; the
+  active list starts as `include` and flips every time `--include`/
+  `--exclude` appears, any order, any count, no error cases needed.
+  Rewrote `build_manifest.sh`'s parser accordingly. Verified against
+  the full mixed-order table (six combinations) in sandbox, then
+  cases 1-12 all green on real device (`tests/env_sanity_test.sh`,
+  extended with cases 9-12 for the new mode-switch behavior).
+- `docs/CONTRACTS.txt` redesigned: dropped stale `(was ...)` naming
+  history (git log already has that), rewrote the `build_manifest.sh`
+  section for the new semantics, added a **Valid calls**/**On
+  violation** table per script/file -- exact error messages and exit
+  codes pulled from the actual code, not paraphrased. Pure-library
+  files now explicitly say "sourced only, no CLI of its own."
+- `README.md`'s `build_manifest.sh` usage line updated to match.
+- Compared doc conventions across projects: Ledger's `INDEX.md`/
+  `rules.md` solve doc-navigation-at-scale, a problem `archive_scripts`
+  doesn't have yet (small `docs/` tree) -- correctly not adopted here,
+  per `rules.md`'s own "complexity here is earned, not preemptive"
+  philosophy. The real gap was a `CLAUDE.md`-equivalent (project
+  context for an agent: dev commands, architecture, key files, common
+  pitfalls) -- `archive_scripts` had none. Built `AGENTS.md` at repo
+  root; moved `tone.md`'s "Per-session mechanics" section into it
+  wholesale (not duplicated) plus two cross-pollinated facts from
+  Ledger's `QA.md` (`/tmp` not writable in Termux, the 4-backtick-fence
+  CommonMark reasoning). `tone.md` now stays purely about
+  communication style.
+- An outside review (DeepSeek) suggested a CI/CD pipeline. Most of it
+  didn't fit a single-maintainer on-device tool (versioning, release
+  artifacts, self-update -- solving a distribution problem that
+  doesn't exist here) and was declined. Logged the two genuinely
+  free-win pieces (shellcheck, a CI run of the already-self-contained
+  `run_retry_test.sh`) to `ideas.md` as decided-against-for-now, not
+  built -- no bottleneck yet.
+- `ideas.md`'s own convention changed from strictly append-only to
+  editable: an idea now gets edited or removed once it's implemented
+  or fails validation, instead of sitting there looking still-pending
+  forever. Applied immediately: removed the now-stale Reddit post
+  draft entry, fixed a literal `\n` (not a real newline) sitting in
+  the file from an old escaping bug, added the CI/CD entry under the
+  new convention.
+- Re-added the end-of-session checklist that got silently dropped when
+  the `tone.md` mechanics section was condensed into `AGENTS.md`'s
+  pitfalls list -- full content now lives in `AGENTS.md`, `tone.md`
+  carries a strong pointer to it rather than a duplicate copy.
+- Every delivery this session dry-run tested against a scratch clone
+  (fresh `git clone` + fake git identity) before handing the patch
+  script over -- catches issues like a missing `.patches/` dir (only
+  existed on-device from prior sessions, not in a clean clone) and one
+  self-inflicted escaping bug in a `WRITTEN` print message, both
+  before either reached the real repo.
+- Still open, unchanged from 2026-08-13: `docs/architecture.md` +
+  `docs/archive-architecture.mermaid` still don't reflect `config.sh`/
+  `build_manifest.sh`. Next up.

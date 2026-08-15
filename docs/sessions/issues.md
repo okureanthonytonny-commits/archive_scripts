@@ -307,6 +307,104 @@
   examples are the case most likely to trip this, and this file is
   exactly that case.
 
+## Resolved this session (2026-08-15)
+
+**1. `build_manifest.sh` `--exclude` broke when it followed a
+positional directory -- resolved, redesigned**
+- Real-device sanity run (queued since 2026-08-13,
+  `tests/env_sanity_test.sh`) hit `ERROR: not a directory: --exclude`
+  on `DIR --exclude PATH`. Root cause: the parser's strict-`getopts`
+  `*) break` stopped reading flags at the first positional token, so
+  a later `--exclude` and its value both fell into the directory list.
+  Reproduced live in sandbox with dummy dirs before touching device
+  code, confirming the exact failure shape.
+- Redesigned `--include`/`--exclude` as order-independent mode
+  switches: a bare positional arg goes to whichever list (`include`/
+  `exclude`) is currently active; the active list starts as `include`
+  and flips on every `--include`/`--exclude`, in any order, any
+  count -- no special-cased error path needed, it falls straight out
+  of the state machine. Verified against the full mixed-order
+  combination table in sandbox first, then all 12 cases (4/5 were the
+  previously-broken ones; 9-12 added specifically for mode-switch
+  order-independence and repeated-switch safety) green on real
+  device.
+- `docs/CONTRACTS.txt` and `README.md` updated for the new semantics
+  same session -- see item 2 below for the fuller `CONTRACTS.txt`
+  rework.
+
+**2. `docs/CONTRACTS.txt` redesigned -- stale content removed, new
+sections added**
+- Dropped every `(was <old filename>)` naming-history comment -- `git
+  log` already carries that, and it was dead weight in a doc meant to
+  be read fresh each session.
+- Added a **Valid calls** / **On violation** table per script and
+  library file: exact invocation forms plus the literal error message
+  and exit code for each violation, pulled from the actual code (not
+  paraphrased). Pure-library files (`config.sh`, `common.sh`,
+  `verify.sh`, `delete.sh`, `single_file_compressor.sh`,
+  `multi_file_pipeline.sh`) now explicitly say "sourced only, no CLI
+  of its own" instead of being silent on the point.
+
+**3. `AGENTS.md` created; `tone.md` split cleanly into communication
+style only**
+- Compared doc conventions across `archive_scripts`, Ledger, and two
+  external repos (notebooklm-py's `CLAUDE.md`, Trilli as a scale
+  reference). Ledger's `INDEX.md`/`rules.md` solve doc-navigation at a
+  doc-tree size `archive_scripts` doesn't have yet -- correctly not
+  adopted, per `rules.md`'s own "complexity here is earned, not
+  preemptive" reasoning applied to itself. The real gap was a
+  `CLAUDE.md`-equivalent: project context for an agent (dev commands,
+  architecture, key files, common pitfalls), which `archive_scripts`
+  had none of.
+- Built `AGENTS.md` at repo root. Moved (not duplicated) `tone.md`'s
+  "Per-session mechanics" section into it wholesale, condensed to a
+  scannable 11-item pitfalls list, plus two facts cross-pollinated
+  from Ledger's `QA.md` (`/tmp` not writable in Termux for the shell
+  user; the CommonMark reasoning behind the 4-backtick-fence rule).
+  `tone.md` now stays purely about communication style with Tonny.
+- Every delivery this session (five patch scripts total) dry-run
+  tested against a fresh scratch `git clone` before handing it over --
+  caught a missing `.patches/` dir (gitignored, so absent from a truly
+  clean clone even though it existed on-device from prior sessions)
+  and one self-inflicted double-escaping bug in a `WRITTEN` print
+  message, both before either reached the real repo.
+
+**4. External review (DeepSeek) evaluated, mostly declined**
+- Suggested a CI/CD pipeline: automated test runner, shellcheck,
+  versioning/releases, self-update mechanism. Most doesn't fit a
+  single-maintainer on-device tool -- releases/versioning/self-update
+  solve a distribution problem that doesn't exist when delivery is
+  already `git pull` on a device only Tonny uses. Also suggested
+  moving `tone.md` out of the repo and splitting `AGENTS.md`/
+  `CONTRIBUTING.md` -- based on a public-OSS-contributor model that
+  doesn't apply here either.
+- The two genuinely free-win pieces (shellcheck in CI; a GitHub
+  Actions run of `tests/run_retry_test.sh`, which is already
+  self-contained -- isolated `STATE_LOG`, no real device or deletes)
+  logged to `ideas.md` as decided-against-for-now, not built -- no
+  bottleneck this solves yet.
+
+**5. `ideas.md` convention changed from append-only to editable**
+- Previous rule ("Append only. Never edit or delete an existing
+  entry.") meant implemented or decided-against ideas sat looking
+  still-pending forever. New rule: an idea gets edited or removed once
+  resolved one of two ways -- implemented (remove, reference where it
+  landed) or failed validation (remove, or edit in place to note why,
+  if the reasoning's worth keeping).
+- Applied immediately: removed the now-stale 2026-08-09 Reddit-post-
+  draft entry; fixed a literal `\n` (two characters, not a real
+  newline -- the exact `AGENTS.md` pitfall #11 escaping bug, just
+  never cleaned up) sitting alone between two `---` separators; added
+  the CI/CD entry from item 4 above under the new convention.
+
+**6. End-of-session checklist restored**
+- Got silently dropped when `tone.md`'s mechanics section was
+  condensed into `AGENTS.md`'s pitfalls list earlier this session --
+  the condensing pass cut it as "too process-y for a scannable table"
+  without noticing nothing else covered the gap it left. Full content
+  now lives in `AGENTS.md`; `tone.md` carries a strong pointer instead
+  of a duplicate copy.
+
 ## Open
 
 **1. `2026-03` orphan fold-in — RESOLVED 2026-08-08, see above**
@@ -400,3 +498,11 @@
 - No months remain in the original backlog. Future runs are new data
   going forward, not backlog clearance — a different mode than every
   session so far.
+
+**Update, 2026-08-15:** everything above is still accurate — no new
+pipeline runs happened in the 2026-08-12/13/15 sessions, which were
+doc/tooling-only (`.env` support, `--include`/`--exclude` redesign,
+`CONTRACTS.txt`/`AGENTS.md`/`ideas.md` restructuring). See
+`progress.md` 2026-08-15 for that work. Still open, unchanged since
+2026-08-13: `docs/architecture.md` + the mermaid diagram don't yet
+reflect `config.sh`/`build_manifest.sh` — next up.
