@@ -126,3 +126,23 @@ not) plus every script's valid CLI forms and exact violation messages:
 
 This list grows as new mechanics bite us — add an entry, don't just
 fix and move on.
+
+## End-of-session checklist
+
+Before wrapping up a session that touched code or docs:
+1. Session summary file — `docs/sessions/session-YYYY-MM-DD-summary.md`.
+2. `docs/sessions/progress.md` entry — append-only narrative, what
+   happened and why.
+3. `docs/bugQueue.md` sweep — any new reproducible bug goes in Open
+   (or straight to Resolved if fixed same-session); anything stale
+   gets removed.
+4. `docs/sessions/issues.md` sweep — capability gaps, design
+   proposals, deferred items; update the "Status snapshot at handoff"
+   section at the bottom.
+5. `git status` / `git log` — confirm nothing's staged-but-uncommitted,
+   `.patches/` is empty, `origin/main` is up to date.
+
+Not every session needs all five — a small doc tweak doesn't need a
+progress.md entry of its own. Use judgment; the point is not leaving
+a session's reasoning trapped in chat history where the next cold
+session can't reach it.
