@@ -8,32 +8,47 @@ source "$SCRIPT_DIR/lib/config.sh"
 
 OUTPUT="./archive_manifest.tsv"
 MIN_AGE_DAYS=0
-EXCLUDE_ARGS=()
+CLI_INCLUDES=()
+CLI_EXCLUDES=()
+MODE="include"   # bare positional args go to this list until --include/--exclude switches it
+
+USAGE="Usage: $0 [-o OUTPUT] [-a MIN_AGE_DAYS] [--include DIR ...] [--exclude DIR ...] [DIR [DIR2 ...]]
+  --include/--exclude are mode switches, not single-value flags: every bare
+  arg after one belongs to that list, in any order, until the next switch.
+  Bare args before any switch are implicitly --include (default mode)."
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -o) OUTPUT="$2"; shift 2 ;;
     -a) MIN_AGE_DAYS="$2"; shift 2 ;;
-    --exclude) EXCLUDE_ARGS+=("$2"); shift 2 ;;
-    --) shift; break ;;
-    -*) echo "Usage: $0 [-o OUTPUT] [-a MIN_AGE_DAYS] [--exclude PATH ...] [DIR [DIR2 ...]]" >&2; exit 1 ;;
-    *) break ;;
+    --include) MODE="include"; shift ;;
+    --exclude) MODE="exclude"; shift ;;
+    --)
+      shift
+      for d in "$@"; do
+        if [ "$MODE" = "exclude" ]; then CLI_EXCLUDES+=("$d"); else CLI_INCLUDES+=("$d"); fi
+      done
+      break ;;
+    -*) echo "$USAGE" >&2; exit 1 ;;
+    *)
+      if [ "$MODE" = "exclude" ]; then CLI_EXCLUDES+=("$1"); else CLI_INCLUDES+=("$1"); fi
+      shift ;;
   esac
 done
 
-DIRS=("$@")
+DIRS=("${CLI_INCLUDES[@]}")
 if [ "${#DIRS[@]}" -eq 0 ]; then
   read -r -a DIRS <<< "${INCLUDE_DIRS:-}"
 fi
 
 if [ "${#DIRS[@]}" -eq 0 ]; then
-  echo "Usage: $0 [-o OUTPUT] [-a MIN_AGE_DAYS] [--exclude PATH ...] [DIR [DIR2 ...]]" >&2
+  echo "$USAGE" >&2
   echo "No directories given and INCLUDE_DIRS is not set in .env." >&2
   exit 1
 fi
 
 read -r -a ENV_EXCLUDES <<< "${EXCLUDE_DIRS:-}"
-EXCLUDES=("${EXCLUDE_ARGS[@]}" "${ENV_EXCLUDES[@]}")
+EXCLUDES=("${CLI_EXCLUDES[@]}" "${ENV_EXCLUDES[@]}")
 
 for d in "${DIRS[@]}"; do
   if [ ! -d "$d" ]; then

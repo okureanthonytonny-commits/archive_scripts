@@ -108,13 +108,35 @@ run_case "7: EXCLUDE_DIRS (.env) + --exclude (flag) combined" --exclude "$EXCLUD
 # Case 8: dedup / idempotency -- rerun immediately without resetting
 run_case "8: rerun immediately (dedup check, no reset)"
 
+# --- Mode-switch parser cases (build_manifest.sh redesign) ---
+# Cases 4/5 above (dirs before --exclude) used to hard-error; they should now
+# pass under the new mode-switch parser. Cases 9-12 below specifically probe
+# --include/--exclude order-independence and repeated switches -- all four
+# should produce the same result: DIRS included, EXCLUDE_TARGET excluded.
+
+# Case 9: --exclude before --include, explicit switch back
+reset_manifest
+run_case "9: --exclude EX --include DIR (explicit reorder)" --exclude "$EXCLUDE_REL" --include "${DIRS[@]}"
+
+# Case 10: repeated --exclude switch before --include
+reset_manifest
+run_case "10: --exclude EX --exclude EX --include DIR (repeated switch)" --exclude "$EXCLUDE_REL" --exclude "$EXCLUDE_REL" --include "${DIRS[@]}"
+
+# Case 11: repeated --exclude switch after --include
+reset_manifest
+run_case "11: --include DIR --exclude EX --exclude EX (repeated switch, tail)" --include "${DIRS[@]}" --exclude "$EXCLUDE_REL" --exclude "$EXCLUDE_REL"
+
+# Case 12: bare dir (implicit include) then double --exclude switch
+reset_manifest
+run_case "12: DIR --exclude EX --exclude EX (bare dir, repeated switch)" "${DIRS[@]}" --exclude "$EXCLUDE_REL" --exclude "$EXCLUDE_REL"
+
 # Restore whatever .env setup existed before this script ran
 rm -f .env
 [ "$REAL_ENV_BACKED_UP" -eq 1 ] && mv .env.sanity_backup .env
 rm -f "$TEST_ENV"
 
 echo
-echo "===== Case 9: manifest sanity check ====="
+echo "===== Final: manifest sanity check ====="
 echo "Rows in $DUMMY_MANIFEST: $(wc -l < "$DUMMY_MANIFEST" 2>/dev/null || echo 0)"
 echo "First 10 rows:"
 column -t -s $'\t' "$DUMMY_MANIFEST" 2>/dev/null | head -10
