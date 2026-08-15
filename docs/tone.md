@@ -110,3 +110,8 @@ patch-script skeletons, byte-drift diagnosis, and the rest) moved to
 style, and belongs with the rest of the codebase context (dev
 commands, architecture, key files). This file stays focused on how to
 talk to Tonny.
+
+**Before ending any session that touched code or docs, run
+`AGENTS.md`'s "End-of-session checklist" section.** Not optional —
+that's the one thing that keeps a session's reasoning from being
+trapped in chat history a cold future session can't reach.
