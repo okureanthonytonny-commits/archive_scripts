@@ -1,4 +1,4 @@
-CONTRACTS.txt — who calls who, exact references
+CONTRACTS.txt — who calls who, exact references, and valid CLI usage
 
 RULE OF THUMB FIRST:
 - Called "by name" (a bash function, e.g. verify()) only breaks if the
@@ -9,12 +9,21 @@ RULE OF THUMB FIRST:
 - track.py and summary.py are called BY PATH from the most places —
   renaming either means checking every "Calls" line below.
 
-## multi_month_zipper.sh   (was archive_run_all.sh)
-Run by hand: `multi_month_zipper.sh`
+## multi_month_zipper.sh
+Run by hand: `multi_month_zipper.sh [YYYY-MM ...]`
 Calls:
   - "$SCRIPT_DIR/single_month_zipper.sh" "$month"      [by path]
+Valid calls:
+  - no args             -> runs the default month list (2025-12 2026-01 2026-02 2026-03 2026-04)
+  - YYYY-MM [YYYY-MM..]  -> runs only the given months, in order
+On violation:
+  - required file missing (lib/common.sh, single_month_zipper.sh) ->
+    "PREFLIGHT FAILED — missing required file(s):" + list, exit 1
+  - month string isn't checked for YYYY-MM format here — a malformed
+    value is passed straight to single_month_zipper.sh and fails there
+    (see below)
 
-## single_month_zipper.sh   (was archive_compress.sh)
+## single_month_zipper.sh
 Run by hand or by multi_month_zipper.sh: `single_month_zipper.sh <YYYY-MM>`
 Sources:
   - "$SCRIPT_DIR/lib/common.sh"                          [by path]
@@ -25,19 +34,68 @@ Sources:
 Calls:
   - process_month "$FILELIST" "$MONTH_STAGE"              [by name]
   - python3 "$SCRIPT_DIR/lib/summary.py" ... > FILE_LOG    [by path]
+Valid calls:
+  - YYYY-MM   -> the only supported form; no format validation, any
+     non-empty string is accepted and treated as the month
+On violation:
+  - required file missing -> "PREFLIGHT FAILED — missing required
+    file(s):" + list, exit 1
+  - no argument given -> "Usage: $0 YYYY-MM" + a list of months found
+    in the manifest, exit 1
+  - malformed month (not YYYY-MM but non-empty) -> accepted, but
+    matches nothing in the manifest, so the run proceeds with 0 files
+
+## run_overnight.sh
+Run by hand: `run_overnight.sh [YYYY-MM ...]`
+Calls:
+  - "$SCRIPT_DIR/multi_month_zipper.sh"                   [by path]
+Valid calls:
+  - no args             -> runs the default month list (2025-12 2026-02)
+  - YYYY-MM [YYYY-MM..]  -> runs only the given months, in order
+On violation:
+  - required file missing (lib/common.sh, multi_month_zipper.sh) ->
+    "PREFLIGHT FAILED — missing required file(s):" + list, exit 1
+  - same no-format-check caveat as multi_month_zipper.sh
 
 ## build_manifest.sh
 Run by hand: `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS]
-  [--exclude PATH ...] [DIR [DIR2 ...]]`
+  [--include DIR ...] [--exclude DIR ...] [DIR [DIR2 ...]]`
 Sources:
   - "$SCRIPT_DIR/lib/config.sh"                          [by path]
 Calls: nothing
 Reads: $INCLUDE_DIRS/$EXCLUDE_DIRS from lib/config.sh -- used as the
-  default DIR list when none given on the command line; positional
-  DIR args override INCLUDE_DIRS entirely; --exclude merges with
-  EXCLUDE_DIRS (path-prefix match against each file's absolute path)
+  default include/exclude lists when nothing is given on the command
+  line
+--include/--exclude semantics (mode switches, not single-value flags):
+  bare positional args go to whichever list is currently active; the
+  active list starts as "include" and switches every time --include or
+  --exclude appears, in any order, any number of times. So
+  `DIR --exclude X` means DIR is included, X is excluded; but
+  `--exclude X DIR` means X is excluded AND DIR is also excluded (DIR
+  is a bare arg appearing after --exclude, so it stays in exclude mode
+  — --include must appear again to switch back). CLI --exclude values
+  merge with EXCLUDE_DIRS from .env (path-prefix match against each
+  file's absolute path); positional/--include DIR args override
+  INCLUDE_DIRS entirely (no merge — CLI presence replaces the .env
+  default).
 Writes: archive_manifest.tsv (read by single_month_zipper.sh, by path,
   via $MANIFEST in lib/config.sh)
+Valid calls:
+  - no args at all -> uses $INCLUDE_DIRS from .env, no excludes beyond
+     $EXCLUDE_DIRS
+  - DIR [DIR2 ...] -> bare dirs, implicit --include
+  - --include DIR ... / --exclude DIR ... in any order/count -> explicit
+     mode switches
+  - -o OUTPUT / -a MIN_AGE_DAYS -> optional, may appear anywhere among
+     the flags
+On violation:
+  - unknown flag (anything else starting with -) -> prints the 4-line
+    Usage block to stderr, exit 1
+  - no include dirs resolved (none on CLI, none in .env) -> Usage block
+    + "No directories given and INCLUDE_DIRS is not set in .env.", exit 1
+  - a resolved dir doesn't exist -> "ERROR: not a directory: <path>",
+    exit 2
+  - OUTPUT path not writable -> "ERROR: cannot write to <path>", exit 1
 
 ## lib/config.sh
 Exposes (env vars, exported): MANIFEST, STAGING, ARCHIVES_DIR,
@@ -46,6 +104,7 @@ Exposes (env vars, exported): MANIFEST, STAGING, ARCHIVES_DIR,
 Sources: "$SCRIPT_DIR/.env" if present                    [by path]
 Depends on: $SCRIPT_DIR being set by the caller before sourcing
 Called (sourced) by: lib/common.sh, build_manifest.sh
+Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/common.sh
 Exposes (by name — renaming this FILE is safe, function names aren't):
@@ -54,25 +113,29 @@ Exposes (by name — renaming this FILE is safe, function names aren't):
 Sources:
   - "$SCRIPT_DIR/lib/config.sh"                          [by path]
 Depends on: $SCRIPT_DIR being set by the caller before sourcing
+Valid calls: not run directly — sourced only, no CLI of its own
 
-## lib/single_file_compressor.sh   (was lib/compress.sh)
+## lib/single_file_compressor.sh
 Exposes: compressor_process()          [called by name, from multi_file_pipeline.sh]
 Calls:
   - python3 "$SCRIPT_DIR/lib/track.py" set ...   [by path]
+Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/verify.sh
 Exposes: verify()                       [called by name, from multi_file_pipeline.sh]
 Calls:
   - python3 "$SCRIPT_DIR/lib/track.py" get/set ...   [by path]
   - log()                                            [by name, from common.sh]
+Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/delete.sh
 Exposes: delete()                       [called by name, from multi_file_pipeline.sh]
 Calls:
   - python3 "$SCRIPT_DIR/lib/track.py" get/set ...   [by path]
   - log()                                            [by name, from common.sh]
+Valid calls: not run directly — sourced only, no CLI of its own
 
-## lib/multi_file_pipeline.sh   (was lib/process_month.sh)
+## lib/multi_file_pipeline.sh
 Exposes: process_month()                [called by name, from single_month_zipper.sh]
 Calls:
   - check_space(), set_state(), log()               [by name, from common.sh]
@@ -80,12 +143,28 @@ Calls:
   - compressor_process()                            [by name, from single_file_compressor.sh]
   - verify()                                         [by name, from verify.sh]
   - delete()                                         [by name, from delete.sh]
+Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/track.py
-Exposes CLI: `python3 track.py set|get ...`
+Exposes CLI: `python3 track.py set|get|count ...`
 Called BY PATH from: single_file_compressor.sh, verify.sh, delete.sh, multi_file_pipeline.sh
 Also read (as a file, not called): summary.py
+Valid calls:
+  - set <url> <STATE_NAME> [kind] [path] [note]
+  - get <url>
+  - count <url> <STATE_NAME>
+On violation:
+  - no args at all -> "usage: track.py set|get ...", non-zero exit
+  - set with < 4 args -> "usage: track.py set <url> <STATE_NAME> [kind] [path] [note]"
+  - get with < 3 args -> "usage: track.py get <url>"
+  - count with < 4 args -> "usage: track.py count <url> <STATE_NAME>"
+  - unrecognized command -> "unknown command: <cmd>"
+  - STATE_NAME not a recognized state -> "unknown state: <state_name>"
 
 ## lib/summary.py
 Exposes CLI: `python3 summary.py <filelist>`
 Called BY PATH from: single_month_zipper.sh
+Valid calls:
+  - <filelist_path>
+On violation:
+  - no args -> "usage: summary.py <filelist_path>", non-zero exit
