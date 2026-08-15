@@ -1,12 +1,19 @@
 # ideas.md — raw idea capture
 
 ## Convention
-- Append only. Never edit or delete an existing entry.
-- Each entry: `## YYYY-MM-DD — short title`, then the idea verbatim,
-  unedited, as originally written/spoken.
-- If an idea later gets acted on, don't rewrite it here — reference it
-  from wherever it lands (issues.md, architecture.md, progress.md) and
-  leave this entry as the historical record.
+- Each entry: `## YYYY-MM-DD — short title`, then the idea as
+  originally written/spoken.
+- Editable, not append-only: an idea goes stale once it's resolved
+  one of two ways, and gets edited or removed at that point rather
+  than sitting here as if still pending.
+  - **Implemented** — remove the entry, reference where it actually
+    landed instead (issues.md, architecture.md, progress.md,
+    CONTRACTS.txt).
+  - **Failed validation / decided against** — remove it, or edit it
+    in place to add why, if the reasoning itself is worth keeping
+    (see the file-hash-integrity entries for that pattern).
+- Still-open ideas stay as originally written until one of the above
+  applies.
 
 ---
 
@@ -120,35 +127,6 @@ underlying problem. Related to the file-hash-integrity item (both are
 "assumes single trusted environment" gaps) — worth doing together
 before any open-source push, not urgent before then.
 
-## 2026-08-09 — Reddit post draft: storage crisis story
-
-I thought you meant I'm compressing and packaging them for upload to backblaze.
-
-Here's why the whole point to this project came about.
-My Device storage is almost full at about 91% currently but it was about 95% before we compressed any month data.
-
-I wanted to free up storage without losing my original data. So first I made a backup to backblaze for it's low storage pricing. I'll connect it to cloudflare for zero egress fees for downloads later.
-
-Next was to actually free up storage.
-Most searches and AI responses told me,
-A. to delete more stuff after backup,
-B. if not backed up, compress and delete not so important stuff.
-
-Which had some trade offs:
-For A. zero egress fees and cheaper storage than Google drive doesn't mean faster access or zero data costs for downloads which downloads would fill up space anyway.
-And backup doesn't mean the risk of losing data is zero e.g forgotten password. Platform breaches are nolonger breaking news.
-
-For B. I'd lose original data. And there's no available tool that can iterate my entire gallery compressing the files. If it did exist, it had to progressively delete the original copies because storing compressed and original would fill up memory and brick my phone.
-Also even if I can do one file at a time during free times, I'm lazy and forgetful.
-
-So, I decided to do both A and B.
-Backup originals, compress old files aggressively while keeping the quality usable.
-As an extra, I decided to package the data on a monthly basis just to make sure I don't mix compressed and originals during the process. WhatsApp data is already compressed by default, so needed a tool which could be configured to skip them.
-
-The screenshot is of my files app fresh today 10am 9th August 2026. Only one month has been successfully compressed, verified, packaged, originals deleted with logging at each stage for tracing anomalies.
-
----
-\n
 ---
 
 ## 2026-08-12 — File-hash integrity check, deferred as over-engineering for current repo size
@@ -163,3 +141,23 @@ and check_files.sh's existence-check already covers the more likely
 failure (a file missing or reverted, not tampered with). Revisit if
 the repo gets real outside attention, or per the existing "before any
 open-source push" note this was already tied to in issues.md.
+
+---
+
+## 2026-08-15 — CI/CD pipeline (shellcheck + automated test runner)
+
+An outside review (DeepSeek) flagged the repo has no CI/CD: no
+automated test runner, no shellcheck linting, no versioning/releases,
+no rollback mechanism. Most of it doesn't fit a single-maintainer
+on-device tool -- releases/versioning/self-update are solving a
+distribution problem that doesn't exist when you're the only user and
+delivery is already `git pull` on your own device. The two pieces that
+would be genuinely free wins: `shellcheck` in CI, and a GitHub Actions
+workflow running `tests/run_retry_test.sh` on push (it's already
+self-contained -- isolated STATE_LOG, no real device or deletes needed
+-- so it's actually CI-able as-is; `tests/env_sanity_test.sh` can't
+run in CI since it needs real device paths). Decided against building
+either now: no bottleneck this solves yet, nothing's broken that
+CI would have caught that manual testing didn't. Revisit if a
+regression slips through that a linter or the retry test would have
+caught, or per the existing "before any open-source push" note.
