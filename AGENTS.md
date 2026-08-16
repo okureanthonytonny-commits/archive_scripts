@@ -128,6 +128,14 @@ not) plus every script's valid CLI forms and exact violation messages:
     once — check delivered file output for stray literal `\n`/`\t`
     text as part of the normal post-write look, not just `bash -n`.
 
+12. **Preferred patch-delivery format: single artifact, heredoc-wrapped,
+    self-running** — one `.sh` artifact containing `mkdir -p .patches`,
+    then `cat > .patches/patch_name.py << 'UNIQUE_EOF' ... UNIQUE_EOF`,
+    then the `python3 .patches/patch_name.py` call, all in one block.
+    Copy-paste straight into Termux with no separate save-then-run
+    step. Supersedes delivering the raw `.py` as its own artifact plus
+    typed instructions.
+
 This list grows as new mechanics bite us — add an entry, don't just
 fix and move on.
 
