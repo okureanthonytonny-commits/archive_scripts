@@ -420,3 +420,33 @@
 - Still open, unchanged from 2026-08-13: `docs/architecture.md` +
   `docs/archive-architecture.mermaid` still don't reflect `config.sh`/
   `build_manifest.sh`. Next up.
+
+## 2026-08-16
+- Closed out the doc-staleness item flagged 2026-08-13/08-15:
+  `docs/architecture.md` and `docs/archive-architecture.mermaid` now
+  reflect `lib/config.sh` and `build_manifest.sh`, which both predated
+  the docs by two sessions.
+- `architecture.md`: added a `build_manifest.sh` bullet under Entry
+  points (explicitly *not* part of the tmux/wake-lock self-relaunch
+  group -- it's a by-hand step before a run), and rewrote the File
+  reference block -- `config.sh` listed with its real job (reads
+  `.env`, owns every default), `common.sh` corrected to just
+  logging/disk-safety, `build_manifest.sh` added.
+- `archive-architecture.mermaid`: split `config.sh` out of the `Common`
+  node into its own node feeding `Common`; added a `BuildManifest` node
+  (styled distinctly, sourcing `Config`, appending to `Manifest`) to
+  show it sits outside the tmux/wake-lock entry group.
+- Caught and fixed an unrelated pre-existing bug while in there: the
+  `StateFile` node had a malformed cylinder shape (`[(...."]` missing
+  its closing paren), which meant the diagram hasn't actually parsed
+  in a real mermaid renderer for a while. Confirmed the bug predated
+  this session (`git show HEAD~1`) before fixing it as a third edit in
+  the same patch, rather than silently expanding scope.
+- Both patches dry-run tested against a scratch clone before delivery;
+  the mermaid patch was additionally parse-validated with `mermaid.parse()`
+  (headless, via `jsdom`) rather than just eyeballed, which is what
+  surfaced the `StateFile` bug in the first place.
+- Reviewed remaining `issues.md` backlog (orphan-enumeration-through-
+  `verify()`, storage reorg out of `$HOME`, tmux/wake-lock relaunch
+  dedup across the three entry scripts) -- none picked up this session,
+  still open.
