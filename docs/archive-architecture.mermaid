@@ -7,18 +7,25 @@ flowchart TD
     MultiMonth -->|"calls per month, checks exit code"| SingleMonth
 
     subgraph Libs["lib/ — sourced only, never run directly"]
-        Common["common.sh\nconfig, log(), set_state(), check_space()"]
+        Config["config.sh\nreads .env, exports every config var\nwith its fallback default"]
+        Common["common.sh\nlog(), set_state(), check_space(),\nmonth_to_zipname()"]
         Pipeline["multi_file_pipeline.sh\nprocess_month() — orchestration ONLY,\nno compression/verify/delete logic itself"]
         Compressor["single_file_compressor.sh\ncompressor_process() — one file in,\none compressed file out"]
         Verify["verify.sh\nverify() — decode-check + failure reason"]
         Delete["delete.sh\ndelete() — remove original iff VERIFIED"]
     end
 
+    Config --> Common
+
     SingleMonth -->|source| Common
     SingleMonth -->|source| Compressor
     SingleMonth -->|source| Verify
     SingleMonth -->|source| Delete
     SingleMonth -->|source| Pipeline
+
+    BuildManifest["build_manifest.sh\n(by hand, before a run —\nNOT in the tmux/wake-lock group)\nscans dirs, dedupes, --include/--exclude"]
+    BuildManifest -->|source| Config
+    BuildManifest -->|appends| Manifest
 
     Manifest[("archive_manifest.tsv\n(pre-built, all months)")]
     SingleMonth -->|"awk-filter by month"| FileList[(".archive_tmp/filelist_YYYY-MM.txt")]
@@ -57,10 +64,11 @@ flowchart TD
     StateLog -.->|"summary.py: query, not a write —\nlast row per url, terminal states only"| FileLog[("files.tsv\nregenerated on demand,\nnever written directly")]
     FileLog -.-> SingleMonth
 
-    Compressor -.->|"each file"| StateFile[(".state\noverwritten, 1 line:\ncurrent file + load avg"]
+    Compressor -.->|"each file"| StateFile[(".state\noverwritten, 1 line:\ncurrent file + load avg")]
     SingleMonth -.-> RunLog[("run.log\nnarrative, human-readable")]
     Pipeline -.-> RunLog
 
     style Pipeline fill:#1f2a3a,stroke:#4a7ab5,stroke-width:2px
     style Barrier fill:#3a2f1f,stroke:#c08a2b,stroke-width:2px
     style StateLog fill:#1f3a24,stroke:#2bc060,stroke-width:2px
+    style BuildManifest fill:#2a1f3a,stroke:#8a4ab5,stroke-width:2px
