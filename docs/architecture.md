@@ -23,6 +23,13 @@ answer from logs alone.
   releases the wake-lock and kills its own `tmux` server so nothing
   keeps running afterward. Fires a `termux-notification` on completion
   if Termux:API is installed.
+- **`build_manifest.sh`** — separate from the tmux/wake-lock group above;
+  run by hand to (re)build `archive_manifest.tsv` before a zip run. Scans
+  one or more directories, deduping against paths already in the
+  manifest and filtering by `-a MIN_AGE_DAYS`. `--include`/`--exclude`
+  are mode switches, not single-value flags — every bare arg after one
+  belongs to that list until the next switch. CLI includes/excludes
+  layer on top of (don't replace) `.env`'s `INCLUDE_DIRS`/`EXCLUDE_DIRS`.
 
 All three self-relaunch into a detached tmux session with a wake-lock if
 not already running inside one — this logic is currently duplicated
@@ -116,9 +123,15 @@ one and the other. Now there's exactly one thing to trust.
 ```
 multi_month_zipper.sh    orchestrator — loop months, circuit-breaker
 single_month_zipper.sh   worker — one month → zip
+build_manifest.sh        scan dirs, (re)build archive_manifest.tsv —
+                          --include/--exclude mode switches, -a MIN_AGE_DAYS
 run_overnight.sh         unattended wrapper — wake-lock, tmux, notify, self-close
 lib/
-  common.sh                config, log(), set_state(), check_space()
+  config.sh                 reads .env, exports every config var with its
+                             fallback default — the only place defaults live
+  common.sh                 log(), set_state(), check_space(),
+                             month_to_zipname() — config now comes from
+                             config.sh, not common.sh
   single_file_compressor.sh  compressor_process() — one file in, one file out
   verify.sh                 verify() — decode-check + gate reason
   delete.sh                 delete() — remove original iff VERIFIED
