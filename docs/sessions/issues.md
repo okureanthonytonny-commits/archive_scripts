@@ -462,16 +462,13 @@ style only**
   parent dir) — parked until after the trust test; trust test is now
   done, so this is unblocked whenever it's next picked up.
 
-**5. Docs fell behind the `.env`/`config.sh` change -- partially fixed, two left**
-- `CONTRACTS.txt` and `README.md` updated same-session (config.sh
+**5. Docs fell behind the `.env`/`config.sh` change -- now fully resolved**
+- `CONTRACTS.txt` and `README.md` updated 2026-08-13 (config.sh
   entry added, `common.sh`/`build_manifest.sh` entries corrected).
-- Still stale, queued for next session:
-  - `docs/architecture.md`'s File reference table still describes
-    `common.sh` as `config, log(), set_state(), check_space()` and
-    doesn't list `build_manifest.sh` or `lib/config.sh` at all.
-  - `docs/archive-architecture.mermaid` has the same stale `Common`
-    node label, no `config.sh` node, and no `build_manifest.sh` entry
-    point -- doesn't show how the manifest actually gets built anymore.
+- `docs/architecture.md` and `docs/archive-architecture.mermaid`
+  updated 2026-08-16 -- File reference table and mermaid `Common`
+  node both now split `config.sh` out correctly, `build_manifest.sh`
+  added to both as its own entry point. See `progress.md` 2026-08-16.
 
 ## Status snapshot at handoff
 - **All 5 months in the original backlog are fully done**: compressed,
@@ -503,6 +500,11 @@ style only**
 pipeline runs happened in the 2026-08-12/13/15 sessions, which were
 doc/tooling-only (`.env` support, `--include`/`--exclude` redesign,
 `CONTRACTS.txt`/`AGENTS.md`/`ideas.md` restructuring). See
-`progress.md` 2026-08-15 for that work. Still open, unchanged since
-2026-08-13: `docs/architecture.md` + the mermaid diagram don't yet
-reflect `config.sh`/`build_manifest.sh` — next up.
+`progress.md` 2026-08-15 for that work.
+
+**Update, 2026-08-16:** `docs/architecture.md` + the mermaid diagram
+now reflect `config.sh`/`build_manifest.sh` — the doc-staleness item
+flagged 2026-08-13 is fully closed. Also fixed an unrelated
+pre-existing mermaid syntax bug (`StateFile` node's malformed cylinder
+shape) found while parse-validating the diagram before delivery. See
+`progress.md` 2026-08-16.
