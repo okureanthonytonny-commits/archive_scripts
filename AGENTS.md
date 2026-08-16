@@ -9,6 +9,10 @@ vs by-path, which renames are safe), see CONTRACTS.txt.
 
 ---
 
+## Repo
+
+https://github.com/okureanthonytonny-commits/archive_scripts
+
 ## What this is
 
 Compresses and archives phone media to usable quality, running
