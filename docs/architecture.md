@@ -147,8 +147,6 @@ Full call-by-call reference, including which references are by-name
 
 - No size-ratio sanity check before delete — verify confirms the output
   *decodes*, not that compression actually shrank the file meaningfully.
-- No final reconciliation pass — nothing yet cross-checks the zip's file
-  count against the manifest's expected count for the month.
 - No timeout on individual `ffmpeg` calls — a genuinely hung encode
   (distinct from a slow-but-progressing one) would never be caught by
   anything; it would just occupy a `MAX_PARALLEL_VIDEO` slot forever.
