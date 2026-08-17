@@ -52,5 +52,13 @@ compressor_process() {
     fi
   fi
 
+  # Stamp staged output with the original's mtime -- gives orphan
+  # verification a trustworthy time anchor later (rename-proof, unlike
+  # filename matching), and the final zip inherits it for free since zip
+  # stores each entry's mtime from the file being zipped. Compression
+  # itself doesn't preserve mtime (cp with no -p, fresh ffmpeg/cwebp
+  # output), so this has to be explicit.
+  [ -s "$out" ] && [ -f "$url" ] && touch -r "$url" "$out"
+
   python3 "$SCRIPT_DIR/lib/track.py" set "$url" COMPRESSED "$kind" "$out" "$tool_err"
 }
