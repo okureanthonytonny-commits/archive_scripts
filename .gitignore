@@ -2,6 +2,9 @@
 .state
 .state_log.tsv
 
+# Throwaway test output — env_sanity_test.sh's own scratch manifest
+tests/sanity_manifest.tsv
+
 # Real media fixtures — binary, not meant to live in git history
 tests/fixtures/**/*.mp4
 tests/fixtures/**/*.webp

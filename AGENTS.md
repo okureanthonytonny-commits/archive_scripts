@@ -135,6 +135,18 @@ not) plus every script's valid CLI forms and exact violation messages:
     Copy-paste straight into Termux with no separate save-then-run
     step. Supersedes delivering the raw `.py` as its own artifact plus
     typed instructions.
+13. **Self-delete a patch script with plain `rm`, not `git rm -f`** —
+    `.patches/*` is itself gitignored (see `.gitignore`), so a patch
+    script is never tracked in the first place; `git rm -f` on it
+    fails with "pathspec did not match any files" and aborts the
+    script before the push-of-self-delete step. Use `os.remove(path)`
+    (or plain `rm` in shell) instead, no `git add`/`git rm`/commit
+    needed for the delete itself.
+14. **Check `.gitignore` before treating an untracked file as a
+    problem** — an untracked file in `git status` isn't automatically
+    an anomaly needing manual cleanup; check whether it's a
+    known-regenerable artifact (test scratch output, runtime state)
+    that belongs in `.gitignore` instead.
 
 This list grows as new mechanics bite us — add an entry, don't just
 fix and move on.
