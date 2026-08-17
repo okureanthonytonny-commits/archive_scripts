@@ -508,3 +508,11 @@ flagged 2026-08-13 is fully closed. Also fixed an unrelated
 pre-existing mermaid syntax bug (`StateFile` node's malformed cylinder
 shape) found while parse-validating the diagram before delivery. See
 `progress.md` 2026-08-16.
+
+**Update, 2026-08-17:** No pipeline runs, no backlog items picked up --
+session was delivery-tooling only (repo URL added to `AGENTS.md`,
+heredoc-delivery convention documented, a real self-delete bug in that
+convention found and fixed, `.gitignore` hygiene pitfall added, one
+stray test artifact ignored). The three backlog items above (orphan
+enumeration, storage reorg, tmux/wake-lock dedup) are all still open
+and unchanged. See `progress.md` 2026-08-17.

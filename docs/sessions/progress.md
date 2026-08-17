@@ -450,3 +450,35 @@
   `verify()`, storage reorg out of `$HOME`, tmux/wake-lock relaunch
   dedup across the three entry scripts) -- none picked up this session,
   still open.
+
+## 2026-08-17
+- Added the repo URL (`https://github.com/okureanthonytonny-commits/archive_scripts`)
+  to `AGENTS.md` -- previously missing, had to be requested mid-session
+  before a clone could happen at all.
+- Documented the preferred patch-delivery format in `AGENTS.md` as
+  pitfall #12: single heredoc-wrapped, self-running `.sh` artifact
+  (`mkdir -p .patches` + `cat > .patches/patch_name.py <<'EOF'` +
+  the `python3` call, all in one paste-able block) -- supersedes
+  delivering the raw `.py` plus separate typed instructions.
+- Found and fixed a real bug in that same delivery convention: patch
+  scripts were calling `git rm -f` on themselves to self-delete, but
+  `.patches/*` is itself gitignored, so the file was never tracked to
+  begin with -- `git rm -f` always failed with "pathspec did not match
+  any files", aborting before the self-delete push. Two patches landed
+  with this bug live before it was caught (repo-URL patch, heredoc-
+  format patch); both left an orphaned untracked `.py` behind that
+  needed manual `rm`. Fixed going forward: self-delete via plain
+  `os.remove()`/`rm`, no git involved. Logged as pitfall #13.
+- Added pitfall #14: check `.gitignore` before treating an untracked
+  file surfaced by `git status` as a problem needing cleanup -- may
+  just be a known-regenerable artifact that belongs ignored instead.
+  Prompted by `tests/sanity_manifest.tsv` showing up as untracked;
+  confirmed it's `env_sanity_test.sh`'s own throwaway output, added it
+  to `.gitignore` rather than treating it as session debris.
+- Every patch this session dry-run tested against a scratch clone
+  before delivery, same as prior sessions -- this is what caught the
+  `git rm -f` bug's *cause* (gitignored `.patches/*`) rather than just
+  its symptom, once it surfaced on-device.
+- Still open, unchanged: orphan-enumeration-through-`verify()`, storage
+  reorg out of `$HOME`, tmux/wake-lock relaunch dedup across the three
+  entry scripts. None picked up this session.
