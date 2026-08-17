@@ -105,6 +105,47 @@ done < "$FILELIST"
 ZIP_COUNT=$(wc -l < "$ZIP_FILELIST" | tr -d ' ')
 log "$ZIP_COUNT verified file(s) to zip."
 
+# --- Orphan enumeration: check any physical staged file not already
+# covered by a confirmed DELETED entry above. webp/video get a direct
+# decode-check on the staged output itself (no original needed). copy
+# kind needs the original for a size-match, found at its same relpath
+# if it hasn't been renamed since staging -- if not found, left
+# unresolved rather than guessed at (see docs/sessions/issues.md).
+log "Checking staging for orphans (files not backed by a confirmed DELETED entry)..."
+ORPHAN_RECOVERED=0
+ORPHAN_UNRESOLVED=0
+while IFS= read -r -d '' staged_path; do
+  rel="${staged_path#"$MONTH_STAGE"/}"
+  grep -qxF "$rel" "$ZIP_FILELIST" && continue
+
+  ext_lower=$(echo "${staged_path##*.}" | tr '[:upper:]' '[:lower:]')
+  ok=0
+  case "$ext_lower" in
+    webp) verify_webp "$staged_path" && ok=1 ;;
+    mp4|mov) verify_video "$staged_path" && ok=1 ;;
+    *)
+      orig_candidate="/storage/emulated/0/$rel"
+      [ -f "$orig_candidate" ] && verify_copy "$orig_candidate" "$staged_path" && ok=1
+      ;;
+  esac
+
+  if [ "$ok" = "1" ]; then
+    echo "$rel" >> "$ZIP_FILELIST"
+    log "ORPHAN RECOVERED (verified, folded into zip): $rel"
+    ORPHAN_RECOVERED=$((ORPHAN_RECOVERED + 1))
+  else
+    log "ORPHAN UNRESOLVED (failed check or original not found -- left out of zip, needs manual look): $rel"
+    ORPHAN_UNRESOLVED=$((ORPHAN_UNRESOLVED + 1))
+  fi
+done < <(find "$MONTH_STAGE" -type f -print0)
+
+if [ "$ORPHAN_RECOVERED" -gt 0 ] || [ "$ORPHAN_UNRESOLVED" -gt 0 ]; then
+  log "Orphan check: $ORPHAN_RECOVERED recovered, $ORPHAN_UNRESOLVED unresolved."
+fi
+
+ZIP_COUNT=$(wc -l < "$ZIP_FILELIST" | tr -d ' ')
+log "$ZIP_COUNT verified file(s) to zip (after orphan recovery)."
+
 # --- Two-way reconciliation: manifest vs terminal states vs physical staging ---
 ORIGINAL_COUNT=$(wc -l < "$FILELIST" | tr -d ' ')
 TERMINAL_COUNT=$(wc -l < "$FILE_LOG" | tr -d ' ')
@@ -121,7 +162,7 @@ if [ "$STUCK_COUNT" -gt 0 ] || [ "$GHOST_COUNT" -gt 0 ] || [ "$ORPHAN_COUNT" -gt
   log "  Reached a terminal state:     $TERMINAL_COUNT"
   [ "$STUCK_COUNT" -gt 0 ]  && log "  -> STUCK mid-pipeline (no terminal state yet): $STUCK_COUNT"
   [ "$GHOST_COUNT" -gt 0 ]  && log "  -> GHOST (state says DELETED, staged file missing): $GHOST_COUNT"
-  [ "$ORPHAN_COUNT" -gt 0 ] && log "  -> ORPHAN (physical file in staging, not a confirmed DELETED entry): $ORPHAN_COUNT"
+  [ "$ORPHAN_COUNT" -gt 0 ] && log "  -> ORPHAN (still unresolved after verification attempt): $ORPHAN_COUNT"
 
   RESOLUTION=""
   case "$ANOMALY_MODE" in
