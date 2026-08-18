@@ -482,3 +482,36 @@
 - Still open, unchanged: orphan-enumeration-through-`verify()`, storage
   reorg out of `$HOME`, tmux/wake-lock relaunch dedup across the three
   entry scripts. None picked up this session.
+
+## 2026-08-18
+- **Closed the longest-standing open gap: orphan enumeration through
+  `verify()`** (issues.md open item 4). The pre-zip orphan scan is now
+  `lib/orphan_reconcile.sh`'s `reconcile_orphans()` (was an inline raw
+  `verify_webp`/`verify_video`/`verify_copy` loop in
+  `single_month_zipper.sh`): each staged file not backed by a confirmed
+  `DELETED` entry gets its original url + kind reconstructed and is run
+  through the real `verify_orphan()` (new in `lib/verify.sh`, same
+  gates as `verify()` but for a state-less staged file).
+- A `VERIFIED` orphan folds into the zip list and now carries a real
+  track.py `VERIFIED` entry (so a later run's Pass 3 can delete its
+  original). A `FAILED` orphan gets a tracked `FAILED` entry with the
+  exact reason and falls into Pass 1's existing retry-with-guard —
+  recompress if the original exists, `MISSING` if gone — capped by
+  `RETRY_MAX` like any other FAILED file. This is the mechanism that
+  would have auto-flagged the 2 corrupted `2026-03` staged files.
+- Url reconstruction consolidated into `_orphan_derive_url()` (disk
+  original first, then manifest fold-in urls, then the default `.jpg`
+  guess from the 2026-08-08 fold-in); `tests/diagnostics/
+  orphan_status.sh` now sources the libs and uses it instead of its own
+  (historically-buggy, gap-3) copy.
+- Validated in a sandbox (isolated `STATE_LOG`, shimmed `dwebp`/
+  `ffprobe`, fake manifest/staging under a `/storage/emulated/0`
+  symlink): all six derive/verify paths plus the `RETRY_MAX` guard
+  across three runs (verify → re-verify → retry-exhausted with no new
+  state writes after the cap). `bash -n` clean on all touched scripts.
+- Docs synced: `CONTRACTS.txt` (new lib entry, verify.sh + track.py
+  callers), `README.md` known-gap rewritten, `architecture.md` file
+  reference + mermaid got an `orphan_reconcile.sh` node, `issues.md`
+  gap marked resolved.
+- Still open: storage reorg out of `$HOME`, tmux/wake-lock relaunch
+  dedup across the three entry scripts.

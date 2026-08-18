@@ -133,9 +133,16 @@ lib/
                              month_to_zipname() — config now comes from
                              config.sh, not common.sh
   single_file_compressor.sh  compressor_process() — one file in, one file out
-  verify.sh                 verify() — decode-check + gate reason
+  verify.sh                 verify() — decode-check + gate reason;
+                             verify_orphan() — same gates, staged file with
+                             no track.py entry (reconciliation orphans)
   delete.sh                 delete() — remove original iff VERIFIED
   multi_file_pipeline.sh    process_month() — the 3-pass loop + 2 barriers
+  orphan_reconcile.sh       reconcile_orphans() — pre-zip orphan scan: each
+                             physical staged file not backed by a confirmed
+                             DELETED entry is url/kind-reconstructed and run
+                             through verify_orphan(); VERIFIED folds into the
+                             zip list, FAILED gets tracked + retry-with-guard
   track.py                  state_log.tsv reader/writer, CLI
   summary.py                derives FILE_LOG from state_log.tsv
 ```

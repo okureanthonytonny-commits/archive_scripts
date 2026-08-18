@@ -11,8 +11,9 @@ flowchart TD
         Common["common.sh\nlog(), set_state(), check_space(),\nmonth_to_zipname()"]
         Pipeline["multi_file_pipeline.sh\nprocess_month() — orchestration ONLY,\nno compression/verify/delete logic itself"]
         Compressor["single_file_compressor.sh\ncompressor_process() — one file in,\none compressed file out"]
-        Verify["verify.sh\nverify() — decode-check + failure reason"]
+        Verify["verify.sh\nverify() — decode-check + failure reason\nverify_orphan() — same gates, staged file\nwith no track.py entry (reconciliation)"]
         Delete["delete.sh\ndelete() — remove original iff VERIFIED"]
+        OrphanReconcile["orphan_reconcile.sh\nreconcile_orphans() — scans staging for files\nwith no confirmed DELETED entry, reconstructs\nurl+kind, runs each through verify_orphan()"]
     end
 
     Config --> Common
@@ -22,6 +23,7 @@ flowchart TD
     SingleMonth -->|source| Verify
     SingleMonth -->|source| Delete
     SingleMonth -->|source| Pipeline
+    SingleMonth -->|source| OrphanReconcile
 
     BuildManifest["build_manifest.sh\n(by hand, before a run —\nNOT in the tmux/wake-lock group)\nscans dirs, dedupes, --include/--exclude"]
     BuildManifest -->|source| Config
@@ -59,6 +61,8 @@ flowchart TD
 
     Pass3 --> Staging[("archive_staging/YYYY-MM/")]
     Staging -->|"zip + verify"| Zip[("Archives/Month-Year.zip")]
+    Staging -.->|"unbacked files only"| OrphanReconcile
+    OrphanReconcile -->|"VERIFIED → into zip list; FAILED → tracked,\nretry-with-guard on a later run"| Zip
     Zip -->|"verified"| ClearStage["rm -rf staging"]
 
     StateLog -.->|"summary.py: query, not a write —\nlast row per url, terminal states only"| FileLog[("files.tsv\nregenerated on demand,\nnever written directly")]

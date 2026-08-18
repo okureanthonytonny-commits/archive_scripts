@@ -31,8 +31,10 @@ Sources:
   - "$SCRIPT_DIR/lib/verify.sh"                           [by path]
   - "$SCRIPT_DIR/lib/delete.sh"                           [by path]
   - "$SCRIPT_DIR/lib/multi_file_pipeline.sh"              [by path]
+  - "$SCRIPT_DIR/lib/orphan_reconcile.sh"                 [by path]
 Calls:
   - process_month "$FILELIST" "$MONTH_STAGE"              [by name]
+  - reconcile_orphans "$MONTH_STAGE" "$ZIP_FILELIST" "$MANIFEST" [by name]
   - python3 "$SCRIPT_DIR/lib/summary.py" ... > FILE_LOG    [by path]
 Valid calls:
   - YYYY-MM   -> the only supported form; no format validation, any
@@ -122,10 +124,19 @@ Calls:
 Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/verify.sh
-Exposes: verify()                       [called by name, from multi_file_pipeline.sh]
+Exposes: verify()                        [called by name, from multi_file_pipeline.sh]
+         verify_orphan()                 [called by name, from orphan_reconcile.sh]
 Calls:
   - python3 "$SCRIPT_DIR/lib/track.py" get/set ...   [by path]
   - log()                                            [by name, from common.sh]
+Valid calls: not run directly — sourced only, no CLI of its own
+
+## lib/orphan_reconcile.sh
+Exposes: reconcile_orphans()             [called by name, from single_month_zipper.sh]
+Depends on: log() from common.sh; verify_orphan() from verify.sh;
+  python3 "$SCRIPT_DIR/lib/track.py" (by path) — all must be sourced first
+Called (sourced) by: single_month_zipper.sh, tests/diagnostics/orphan_status.sh
+  (orphan_status.sh only uses _orphan_derive_url, not reconcile_orphans)
 Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/delete.sh
@@ -147,7 +158,7 @@ Valid calls: not run directly — sourced only, no CLI of its own
 
 ## lib/track.py
 Exposes CLI: `python3 track.py set|get|count ...`
-Called BY PATH from: single_file_compressor.sh, verify.sh, delete.sh, multi_file_pipeline.sh
+Called BY PATH from: single_file_compressor.sh, verify.sh, delete.sh, multi_file_pipeline.sh, orphan_reconcile.sh
 Also read (as a file, not called): summary.py
 Valid calls:
   - set <url> <STATE_NAME> [kind] [path] [note]

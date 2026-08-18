@@ -405,6 +405,37 @@ style only**
   now lives in `AGENTS.md`; `tone.md` carries a strong pointer instead
   of a duplicate copy.
 
+## Resolved this session (2026-08-18)
+
+**1. Orphan enumeration through `verify()` — open item 4, resolved**
+- Reconciliation no longer just *counts* orphans. The pre-zip orphan
+  scan (previously an inline raw `verify_webp`/`verify_video`/
+  `verify_copy` loop in `single_month_zipper.sh`) is now a proper lib —
+  `lib/orphan_reconcile.sh`'s `reconcile_orphans()` — which
+  reconstructs each orphan's original url + kind and runs it through the
+  real `verify_orphan()` (added to `lib/verify.sh`).
+- A `VERIFIED` orphan folds straight into the zip list (as before), but
+  now carries a real track.py `VERIFIED` entry instead of being
+  state-less, so a later run's Pass 3 can delete its original.
+- A `FAILED` orphan is no longer just a log line: it gets a tracked
+  `FAILED` entry with the exact reason (dwebp/ffprobe/size), so it falls
+  into the same retry-with-guard logic Pass 1 already has — recompress
+  from the original if it still exists, `MISSING` if it's gone — capped
+  by `RETRY_MAX` with the same exhausted-skip behavior as any other
+  FAILED file. This is the mechanism that would have auto-flagged the 2
+  corrupted `2026-03` staged files instead of needing a manual `ffprobe`
+  sweep.
+- Url reconstruction now has one source of truth:
+  `_orphan_derive_url()` (disk original first, then manifest fold-in
+  urls, then the default `.jpg` guess from the 2026-08-08 fold-in), and
+  is also used by `tests/diagnostics/orphan_status.sh`, which previously
+  carried its own copy (the historically-buggy one from gap 3).
+- Validated in a sandbox (isolated `STATE_LOG`, shimmed `dwebp`/
+  `ffprobe`, fake manifest/staging): all six paths — manifest-derived
+  webp, disk-derived webp, default-guess webp, video, copy-with-
+  original, copy-original-missing — plus the `RETRY_MAX` guard firing
+  across three runs (verify → re-verify → retry-exhausted).
+
 ## Open
 
 **1. `2026-03` orphan fold-in — RESOLVED 2026-08-08, see above**
@@ -423,17 +454,7 @@ style only**
   as a one-off.
 
 **4. Deferred gaps (see `ideas.md` and `architecture.md` for reasoning)**
-- Orphan enumeration through `verify()` — reconciliation currently
-  only *counts* orphans (`ORPHAN_COUNT = STAGE_PHYSICAL_COUNT -
-  ZIP_COUNT`), it never identifies which files or checks their
-  integrity. This is exactly why the 2 corrupted `2026-03` orphans
-  needed a manual `ffprobe` sweep to find instead of being flagged
-  automatically. Fix: have reconciliation enumerate orphans and run
-  each through the real `verify()` — a `VERIFIED` orphan folds
-  straight into the zip list, a `FAILED` orphan falls into the same
-  retry-with-guard logic now built for gap 1 above. One mechanism, two
-  discovery paths. Still not done — no longer the single most urgent
-  gap now that the backlog itself is clear, but still real.
+- Orphan enumeration through `verify()` — RESOLVED 2026-08-18, see above.
 - `.env` for hardcoded paths and config — RESOLVED 2026-08-13.
   `lib/config.sh` now reads `.env` (see `.env.example`) and exports
   every config var with its existing hardcoded value as the fallback
@@ -516,3 +537,11 @@ convention found and fixed, `.gitignore` hygiene pitfall added, one
 stray test artifact ignored). The three backlog items above (orphan
 enumeration, storage reorg, tmux/wake-lock dedup) are all still open
 and unchanged. See `progress.md` 2026-08-17.
+
+**Update, 2026-08-18:** orphan enumeration through `verify()` is now
+resolved (see "Resolved this session (2026-08-18)" above) — the pre-zip
+orphan scan reconstructs each orphan's url+kind and runs it through
+`verify_orphan()`, folding `VERIFIED` ones into the zip and tracking
+`FAILED` ones into the existing retry-with-guard logic. Two backlog
+items remain open: storage reorg out of `$HOME`, tmux/wake-lock
+relaunch dedup. See `progress.md` 2026-08-18.
