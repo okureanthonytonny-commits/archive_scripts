@@ -50,3 +50,34 @@ verify() {
     python3 "$SCRIPT_DIR/lib/track.py" set "$url" FAILED "$kind" "$path" "$note"
   fi
 }
+
+# verify_orphan() -- same gates as verify(), but for a staged file with no
+# track.py entry (a reconciliation orphan). url/kind/path are passed in
+# explicitly (nothing to read from state), and the terminal state is
+# written directly: VERIFIED folds the file into the zip list, FAILED
+# records the reason and lets the retry-with-guard logic handle it on a
+# later run. Called from lib/orphan_reconcile.sh.
+verify_orphan() {
+  local url="$1" kind="$2" path="$3"
+  local ok=0 reason=""
+
+  case "$kind" in
+    webp)  verify_webp "$path" && ok=1 || reason="dwebp decode check failed" ;;
+    video) verify_video "$path" && ok=1 || reason="ffprobe duration check failed" ;;
+    copy)  if [ ! -f "$url" ]; then
+             reason="original not found on disk"
+           else
+             verify_copy "$url" "$path" && ok=1 || reason="size mismatch: original vs staged"
+           fi ;;
+    *)     reason="unknown kind '$kind'" ;;
+  esac
+
+  if [ "$ok" = "1" ]; then
+    python3 "$SCRIPT_DIR/lib/track.py" set "$url" VERIFIED "$kind" "$path" ""
+    return 0
+  else
+    _ORPHAN_VERIFY_REASON="$reason"
+    python3 "$SCRIPT_DIR/lib/track.py" set "$url" FAILED "$kind" "$path" "$reason"
+    return 1
+  fi
+}
