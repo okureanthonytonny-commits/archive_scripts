@@ -9,6 +9,7 @@ REQUIRED_FILES=(
   "$SCRIPT_DIR/lib/verify.sh"
   "$SCRIPT_DIR/lib/delete.sh"
   "$SCRIPT_DIR/lib/multi_file_pipeline.sh"
+  "$SCRIPT_DIR/lib/orphan_reconcile.sh"
   "$SCRIPT_DIR/lib/track.py"
   "$SCRIPT_DIR/lib/summary.py"
 )
@@ -53,6 +54,7 @@ source "$SCRIPT_DIR/lib/single_file_compressor.sh"
 source "$SCRIPT_DIR/lib/verify.sh"
 source "$SCRIPT_DIR/lib/delete.sh"
 source "$SCRIPT_DIR/lib/multi_file_pipeline.sh"
+source "$SCRIPT_DIR/lib/orphan_reconcile.sh"
 
 ANOMALY_MODE="${ANOMALY_MODE:-wait}"
 
@@ -105,46 +107,18 @@ done < "$FILELIST"
 ZIP_COUNT=$(wc -l < "$ZIP_FILELIST" | tr -d ' ')
 log "$ZIP_COUNT verified file(s) to zip."
 
-# --- Orphan enumeration: check any physical staged file not already
-# covered by a confirmed DELETED entry above. webp/video get a direct
-# decode-check on the staged output itself (no original needed). copy
-# kind needs the original for a size-match, found at its same relpath
-# if it hasn't been renamed since staging -- if not found, left
-# unresolved rather than guessed at (see docs/sessions/issues.md).
+# --- Orphan reconciliation: any physical staged file not covered by a
+# confirmed DELETED entry above gets its original url + kind reconstructed
+# and run through verify_orphan() (lib/orphan_reconcile.sh). A VERIFIED
+# orphan folds straight into the zip list; a FAILED one gets a tracked
+# FAILED entry with a reason and falls into the same retry-with-guard
+# logic as Pass 1 (recompress if the original exists, MISSING if it's
+# gone), capped by RETRY_MAX.
 log "Checking staging for orphans (files not backed by a confirmed DELETED entry)..."
-ORPHAN_RECOVERED=0
-ORPHAN_UNRESOLVED=0
-while IFS= read -r -d '' staged_path; do
-  rel="${staged_path#"$MONTH_STAGE"/}"
-  grep -qxF "$rel" "$ZIP_FILELIST" && continue
-
-  ext_lower=$(echo "${staged_path##*.}" | tr '[:upper:]' '[:lower:]')
-  ok=0
-  case "$ext_lower" in
-    webp) verify_webp "$staged_path" && ok=1 ;;
-    mp4|mov) verify_video "$staged_path" && ok=1 ;;
-    *)
-      orig_candidate="/storage/emulated/0/$rel"
-      [ -f "$orig_candidate" ] && verify_copy "$orig_candidate" "$staged_path" && ok=1
-      ;;
-  esac
-
-  if [ "$ok" = "1" ]; then
-    echo "$rel" >> "$ZIP_FILELIST"
-    log "ORPHAN RECOVERED (verified, folded into zip): $rel"
-    ORPHAN_RECOVERED=$((ORPHAN_RECOVERED + 1))
-  else
-    log "ORPHAN UNRESOLVED (failed check or original not found -- left out of zip, needs manual look): $rel"
-    ORPHAN_UNRESOLVED=$((ORPHAN_UNRESOLVED + 1))
-  fi
-done < <(find "$MONTH_STAGE" -type f -print0)
-
-if [ "$ORPHAN_RECOVERED" -gt 0 ] || [ "$ORPHAN_UNRESOLVED" -gt 0 ]; then
-  log "Orphan check: $ORPHAN_RECOVERED recovered, $ORPHAN_UNRESOLVED unresolved."
-fi
+reconcile_orphans "$MONTH_STAGE" "$ZIP_FILELIST" "$MANIFEST"
 
 ZIP_COUNT=$(wc -l < "$ZIP_FILELIST" | tr -d ' ')
-log "$ZIP_COUNT verified file(s) to zip (after orphan recovery)."
+log "$ZIP_COUNT verified file(s) to zip (after orphan reconciliation)."
 
 # --- Two-way reconciliation: manifest vs terminal states vs physical staging ---
 ORIGINAL_COUNT=$(wc -l < "$FILELIST" | tr -d ' ')
