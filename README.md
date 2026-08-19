@@ -156,8 +156,13 @@ since verify was serial-dispatch-bound, not I/O-bound.
 
 ## Known gaps
 
-- No automatic reconciliation on orphaned staged files — they're
-  detected, but a human still has to look at each one.
+- Orphaned staged files (in staging, no confirmed `DELETED` entry) are
+  reconciled automatically before the zip: each one is decoded-checked
+  through the real `verify()`, a `VERIFIED` orphan folds straight into
+  the zip, a `FAILED` one gets a tracked entry with a reason and falls
+  into the same retry-with-guard logic as Pass 1 (capped by `RETRY_MAX`).
+  Only genuinely failed-and-retry-exhausted orphans still need a human
+  look.
 - Paths and config are read from `.env` (see `.env.example`) via
   `lib/config.sh`, so another device just needs its own `.env` —
   no code changes.
