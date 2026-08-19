@@ -404,6 +404,22 @@ style only**
   without noticing nothing else covered the gap it left. Full content
   now lives in `AGENTS.md`; `tone.md` carries a strong pointer instead
   of a duplicate copy.
+## Found this session (2026-08-18, harness test)
+
+**1. issues.md staleness caught mid-session**
+- The 2026-08-17 "Update" note claimed the orphan-enumeration item was
+  "still open and unchanged," but commit d55a1f4 (same day) had
+  already partially implemented it (raw-gate orphan loop inline in
+  single_month_zipper.sh). Doc and code diverged same-day, undetected
+  until a fresh agent checked git log before trusting the doc text.
+- No code fix needed; noting as a process habit: when picking up an
+  "unchanged" backlog item, check git log on the relevant file(s)
+  before trusting the doc's claim.
+- Found while test-driving GitHub Codespaces + OpenCode as a harness
+  (see ~/ideas/workflow/coding-harness-decision.md). The actual
+  orphan-enumeration retry fix lives on branch
+  test/orphan-enum-review, not yet merged.
+
 
 ## Open
 
