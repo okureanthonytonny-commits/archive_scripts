@@ -439,17 +439,16 @@ style only**
   as a one-off.
 
 **4. Deferred gaps (see `ideas.md` and `architecture.md` for reasoning)**
-- Orphan enumeration through `verify()` — reconciliation currently
-  only *counts* orphans (`ORPHAN_COUNT = STAGE_PHYSICAL_COUNT -
-  ZIP_COUNT`), it never identifies which files or checks their
-  integrity. This is exactly why the 2 corrupted `2026-03` orphans
-  needed a manual `ffprobe` sweep to find instead of being flagged
-  automatically. Fix: have reconciliation enumerate orphans and run
-  each through the real `verify()` — a `VERIFIED` orphan folds
-  straight into the zip list, a `FAILED` orphan falls into the same
-  retry-with-guard logic now built for gap 1 above. One mechanism, two
-  discovery paths. Still not done — no longer the single most urgent
-  gap now that the backlog itself is clear, but still real.
+- Orphan enumeration through `verify()` — Resolved 2026-08-21: orphan
+  enumeration through verify() is fully merged. See "Resolved
+  2026-08-21" section below for the full story (two implementations
+  converged: an inline version, and a more complete harness-branch
+  version with a real retry bug that got found and fixed).
+- On-device orphan test — new open item: the merged fix has only been
+  functionally tested in sandboxes (Ubuntu, not Termux). No
+  naturally-occurring orphan exists right now (all 5 backlog months
+  already fully `DELETED`/zipped) -- needs a deliberately manufactured
+  fixture on-device to exercise it for real.
 - `.env` for hardcoded paths and config — RESOLVED 2026-08-13.
   `lib/config.sh` now reads `.env` (see `.env.example`) and exports
   every config var with its existing hardcoded value as the fallback
@@ -532,3 +531,84 @@ convention found and fixed, `.gitignore` hygiene pitfall added, one
 stray test artifact ignored). The three backlog items above (orphan
 enumeration, storage reorg, tmux/wake-lock dedup) are all still open
 and unchanged. See `progress.md` 2026-08-17.
+
+## Resolved 2026-08-21: orphan enumeration through verify()
+
+Two separate implementations of this converged and got reconciled this
+session:
+
+1. **2026-08-17**: a simpler inline version landed in
+   `single_month_zipper.sh` -- direct decode-check per orphan
+   (`verify_webp`/`verify_video`/`verify_copy`), `VERIFIED` folds into
+   the zip, `FAILED` just gets flagged for manual review. No retry
+   integration.
+2. **2026-08-18 (harness session)**: a more complete version was built
+   on branch `test/orphan-enum-review` -- proper webp original-url
+   reconstruction (disk → manifest → `.jpg` guess), and `FAILED`
+   orphans wired into the same retry-with-guard mechanism as Pass 1.
+   Manual review during that session caught a real bug before merging:
+   the retry path re-ran the check against the *same unchanged staged
+   file* instead of clearing it and recompressing from source first --
+   confirmed reproducible (3 runs, corrupt file never gets fixed,
+   `RETRY_MAX` burns out for nothing despite a perfectly good original
+   sitting right there). Fix was queued but blocked on free-tier quota
+   before it could ship, so the branch sat unmerged.
+3. **2026-08-19**: picked back up independently, found the same
+   branch, reproduced the exact bug (before *and* after the fix, to
+   confirm it was real and not just theoretical), fixed it -- a retry
+   now clears the stale staged output and calls `compressor_process()`
+   fresh from source before re-verifying, mirroring Pass 1's actual
+   retry behavior -- and merged the harness branch's more complete
+   design (now bug-fixed) in place of the simpler inline version.
+
+Final shape: `lib/orphan_reconcile.sh` (`reconcile_orphans()`,
+`_orphan_derive_url()`), `verify_orphan()` in `verify.sh`,
+`single_month_zipper.sh` wired to call it, shared derivation logic in
+`tests/diagnostics/orphan_status.sh`. Functionally tested against the
+actual delivered code (not just an isolated harness) before and after
+the fix, both in a sandbox and confirmed the retry-recovery path
+end-to-end.
+
+## Filter-repo history incident, 2026-08-21
+
+`main` was found reset on return to this repo: `git ls-remote`
+(checked directly against the server) showed it sitting 7 commits
+behind where it should have been -- missing both the harness session's
+2026-08-18 docs and the entire 2026-08-19 merge bundle.
+
+Cause: `git filter-repo --path-glob '*.env*' --invert-paths --force`
+was run across a loop of several repos to scrub any real secrets from
+`.env` files, using a *reused* Codespace for `archive_scripts` whose
+local clone hadn't been synced since before any of that recent work.
+`filter-repo` only rewrites whatever history is already in the local
+`.git` -- it doesn't fetch first -- and the subsequent
+`git push --force --all` overwrote the remote unconditionally with
+that stale rewrite, discarding everything newer.
+
+No real secret was ever at risk in this repo specifically: the only
+`*.env*`-matching file ever tracked in its history was `.env.example`
+(harmless template; the real `.env` was always correctly gitignored,
+same commit that added the example, 2026-08-13). The glob still caught
+`.env.example` itself though, and the reset genuinely dropped it from
+the working tree despite it being referenced by `README.md` and other
+docs.
+
+Recovered in full from a local clone preserved from the prior
+session's testing (untouched by the remote reset): `.env.example`
+restored as-is, the harness session's two doc commits restored
+verbatim, the tested merge bundle re-delivered unchanged. Nothing
+actually lost, just re-applied.
+
+**Process takeaway, added as a standing habit**: before any
+`git filter-repo` (or other history-rewriting operation) followed by a
+force-push, always `git fetch origin && git reset --hard origin/<branch>`
+first, in that exact working directory -- every repo, every time.
+Especially critical when reusing an existing Codespace or clone rather
+than starting fresh, since a reused checkout has no reason to reflect
+what's actually on the remote.
+
+## `test/orphan-enum-review` branch, deleted 2026-08-21
+
+Fully superseded -- its design (url/kind reconstruction, retry
+integration) is merged for real, bug fixed, on `main` as of this
+session. Deleted on GitHub rather than left to linger.
