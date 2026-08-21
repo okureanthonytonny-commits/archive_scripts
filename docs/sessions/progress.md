@@ -482,3 +482,37 @@
 - Still open, unchanged: orphan-enumeration-through-`verify()`, storage
   reorg out of `$HOME`, tmux/wake-lock relaunch dedup across the three
   entry scripts. None picked up this session.
+
+## 2026-08-21
+- Delivered last night's tested merge bundle for real: new
+  lib/orphan_reconcile.sh (bug-fixed -- retry now clears the stale
+  staged output and recompresses from source instead of re-checking
+  the same broken file), verify_orphan() in verify.sh,
+  single_month_zipper.sh switched over, shared url-derivation in
+  tests/diagnostics/orphan_status.sh, architecture docs/mermaid
+  updated. 5/5 committed and pushed clean on first on-device run.
+- Returning to do close-out + branch deletion, found `main` reset to
+  a commit from before both the harness session's docs and last
+  night's merge -- 7 commits gone. Traced to a `git filter-repo
+  --path-glob '*.env*' --invert-paths --force` run in a *reused*
+  Codespace whose local clone hadn't synced since before any of that
+  work -- filter-repo only rewrites local history, doesn't fetch
+  first, and `--force --all` overwrote the remote unconditionally
+  with that stale rewrite.
+- Confirmed no real secret was ever at risk in this repo -- only
+  `.env.example` (harmless template) was ever tracked; the real
+  `.env` was always gitignored. The glob match still caught
+  `.env.example` itself though, which the reset genuinely dropped
+  from the working tree despite being referenced by README.md.
+- Recovered everything from a local clone preserved from last night's
+  testing (untouched by the remote reset): restored `.env.example`
+  as-is, restored the harness session's two doc commits verbatim,
+  re-delivered the tested merge bundle unchanged on top.
+- Closed out issues.md/progress.md for real against the actual merged
+  version (not the simpler one originally drafted against). Added the
+  filter-repo incident as its own record. Added on-device orphan test
+  as a new open item.
+- Deleted `test/orphan-enum-review` on GitHub -- superseded now that
+  its design is merged for real, bug fixed, on `main`.
+- Still open: on-device orphan test, storage reorg, tmux/wake-lock
+  relaunch dedup.
