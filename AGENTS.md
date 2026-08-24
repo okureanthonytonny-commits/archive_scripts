@@ -109,6 +109,13 @@ not) plus every script's valid CLI forms and exact violation messages:
    `.patches/` should be empty between sessions. `SKIPPED` and
    confirmed-already-in-sync outcomes self-delete too, not just
    `WRITTEN`; only `ABORT` leaves the script behind for inspection.
+   `WRITTEN` output includes the resulting commit hash and message —
+   `WRITTEN (<hash>: <commit message>)` — so a scan of terminal output
+   alone shows what landed, no separate `git log` check needed.
+   Idempotency must check against `git show HEAD:<path>`, not just
+   current file content or file existence — a partial prior run (file
+   written, commit failed, e.g. missing git identity) must resume and
+   finish the commit, not silently report `SKIPPED` forever.
 9. **Large file content -> staged heredoc, not one giant Python
    string** — a full-file overwrite embedded as one long
    `new_content = '...'` line is fragile to paste into a mobile
