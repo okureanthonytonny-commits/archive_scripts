@@ -161,3 +161,19 @@ either now: no bottleneck this solves yet, nothing's broken that
 CI would have caught that manual testing didn't. Revisit if a
 regression slips through that a linter or the retry test would have
 caught, or per the existing "before any open-source push" note.
+
+---
+
+## 2026-08-25 — Boundary-grep patch delivery tool
+
+Instead of matching an exact full text block for a patch (fragile --
+today's CONTRACTS.txt fix failed on a content mismatch that likely
+came down to whitespace drift), a generic delivery script that takes
+a target file plus a "line above" and "line below" string, greps for
+each as boundary markers, and replaces only what's between them.
+Sketch: `python3 <delivery_script> <target_file_1> "<line above>"
+"<line below>" <new_content_1> <target_file_2> ... ` -- repeatable
+across multiple files/insertions in one call. More robust than exact
+block matching since it only needs two anchor lines instead of the
+entire unchanged surrounding text matching byte-for-byte. Would
+generalize the pattern already used ad hoc in tonight's patch scripts.
