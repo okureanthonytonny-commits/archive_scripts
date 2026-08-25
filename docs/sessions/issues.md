@@ -612,3 +612,26 @@ what's actually on the remote.
 Fully superseded -- its design (url/kind reconstruction, retry
 integration) is merged for real, bug fixed, on `main` as of this
 session. Deleted on GitHub rather than left to linger.
+
+## GitHub Copilot Free tier does not work through OpenCode (2026-08-25)
+
+Tried three different models under the `github-copilot/*` provider in
+OpenCode (GPT-5.4 mini, Claude Sonnet 4.6, and the default that showed
+with zero error before anything was touched) -- all three failed
+identically with "The requested model is not supported," including
+the one that appeared already-selected with no error shown at rest.
+Since the failure was identical across unrelated model families
+(OpenAI, Anthropic) rather than varying by model, this points to the
+Free tier itself not supporting third-party tool/API access at all,
+not a per-model entitlement gap. Confirmed Copilot Free tier account
+(used previously in VS Code) -- so this isn't an access problem with
+the account, just with this specific access path.
+
+**Standing takeaway**: don't spend a round-trip testing another
+`github-copilot/*` model on Free tier expecting a different result.
+Use OpenCode Zen's free models instead (`opencode models` lists
+current options -- they rotate; `deepseek-v4-flash-free`, the model
+that worked in the 2026-08-18 session, no longer exists as of
+2026-08-25). Prefer named/branded model families (NVIDIA Nemotron,
+Xiaomi MiMo) over anonymous stealth/preview entries (Ox Alpha, Big
+Pickle) when stability matters more than raw capability.
