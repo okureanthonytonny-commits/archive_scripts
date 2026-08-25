@@ -516,3 +516,23 @@
   its design is merged for real, bug fixed, on `main`.
 - Still open: on-device orphan test, storage reorg, tmux/wake-lock
   relaunch dedup.
+
+## 2026-08-25
+
+FUS session sidetracked into harness maintenance. Codespace from
+08-18 had auto-deleted; fixed by adding a real
+`.devcontainer/devcontainer.json` (plus sshd and gh-cli features,
+discovered missing one at a time). Spent significant effort on model
+selection after the 08-18 free DeepSeek model was retired and GitHub
+Copilot Free tier turned out not to support OpenCode access at all
+across three different models tried. Settled on
+`opencode/nemotron-3-ultra-free`. First real OpenCode dispatch
+(doc/convention patches) produced a PR with two structural bugs found
+in review; a same-session fix attempt via cherry-pick + content
+replacement went wrong (assertion failure led to a bad manual amend)
+and was reset back to origin's untouched original rather than risk
+compounding it. New standing convention added: patch script pushes
+must retry with backoff (AGENTS.md pitfall #15), driven by the user's
+network being unreliable for the foreseeable future. Real FUS
+storage-reorg goal still not started -- three sessions in a row now
+sidetracked by tooling.
