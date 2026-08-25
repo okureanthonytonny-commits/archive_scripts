@@ -1,4 +1,12 @@
 CONTRACTS.txt — who calls who, exact references, and valid CLI usage
+## Scope & Trust Level
+
+This pipeline assumes the source data is already backed up elsewhere
+(this tool is not the only copy); it is not hardened against
+adversarial input or built to bank/enterprise security standards;
+verification depth is calibrated for personal single-user use, not for
+other people to trust merely because it worked for the author. State
+this explicitly so it's never assumed rather than declared.
 
 RULE OF THUMB FIRST:
 - Called "by name" (a bash function, e.g. verify()) only breaks if the
