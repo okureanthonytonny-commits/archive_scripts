@@ -154,6 +154,15 @@ not) plus every script's valid CLI forms and exact violation messages:
     an anomaly needing manual cleanup; check whether it's a
     known-regenerable artifact (test scratch output, runtime state)
     that belongs in `.gitignore` instead.
+15. **Retry-with-backoff for git push in patch scripts** — connectivity
+    here is unreliable; every patch script that pushes must wrap its
+    `git push` in a retry loop with exponential backoff (base 2s, cap
+    30s), total budget 3 minutes (180s). Only retry on transient
+    network errors (connection refused, timeout, temporary failure,
+    unable to access). Non-transient errors (auth, rejected, lock)
+    fail immediately. Print each retry attempt with elapsed time so
+    terminal output shows progress. Inline the retry logic in each
+    script (no shared imports — patch scripts are self-contained).
 
 This list grows as new mechanics bite us — add an entry, don't just
 fix and move on.
