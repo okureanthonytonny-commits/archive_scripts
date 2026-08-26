@@ -516,3 +516,28 @@
   its design is merged for real, bug fixed, on `main`.
 - Still open: on-device orphan test, storage reorg, tmux/wake-lock
   relaunch dedup.
+
+## 2026-08-26
+- Session 16 (FUS): assessed remaining backlog against a post-MVP
+  framing -- project cleared MVP at the first successful 6-hour
+  unattended run; everything since counted as edge-case/refactor work
+  blocking the project queue, with zero forks/2 stars (one self-
+  starred) showing no external stakes.
+- Decision: close storage reorg, tmux/wake-lock relaunch dedup, and
+  the on-device orphan test as won't-fix rather than open a
+  manufactured-fixture test session -- prior fixture sessions on this
+  project have tended to surface a minor adjacent issue that
+  reactivates scope creep.
+- README.md rewritten: narrative/backstory stripped, orphan
+  reconciliation on-device gap documented as an accepted risk. Landed
+  as commit 4411bf5 on `test/docs-patches-2026-08-25` (already
+  checked out on-device), then cherry-picked directly onto `main`
+  (f3625f1) to decouple from that branch's two known unfixed bugs
+  (AGENTS.md splice, CONTRACTS.txt formatting) rather than block on
+  them.
+- docs/architecture.md: matching orphan on-device gap note added to
+  `Known gaps` (commit 7318279).
+- docs/sessions/issues.md: closed the three items above as won't-fix
+  with reasoning (commit 96f6b35).
+- `test/docs-patches-2026-08-25` unchanged, still unmerged, still has
+  its two known bugs -- untouched this session, separate future work.
