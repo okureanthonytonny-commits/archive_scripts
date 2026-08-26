@@ -444,11 +444,15 @@ style only**
   2026-08-21" section below for the full story (two implementations
   converged: an inline version, and a more complete harness-branch
   version with a real retry bug that got found and fixed).
-- On-device orphan test — new open item: the merged fix has only been
-  functionally tested in sandboxes (Ubuntu, not Termux). No
-  naturally-occurring orphan exists right now (all 5 backlog months
-  already fully `DELETED`/zipped) -- needs a deliberately manufactured
-  fixture on-device to exercise it for real.
+- On-device orphan test -- CLOSED, won't-fix (session 16, 2026-08-26):
+  the merged fix has only been functionally tested in sandboxes
+  (Ubuntu, not Termux), and no naturally-occurring orphan exists to
+  test against on-device. Decided against a manufactured-fixture
+  session -- past fixture sessions for this project have tended to
+  surface a minor adjacent issue that reactivates scope creep (one
+  error found mid-session has previously grown into ~4 new queue
+  items). Accepted as a known, documented risk instead -- see README.md
+  and architecture.md `Known gaps`.
 - `.env` for hardcoded paths and config — RESOLVED 2026-08-13.
   `lib/config.sh` now reads `.env` (see `.env.example`) and exports
   every config var with its existing hardcoded value as the fallback
@@ -470,12 +474,16 @@ style only**
   would just occupy a `MAX_PARALLEL_VIDEO` slot indefinitely.
 - Duplicated tmux/wake-lock relaunch logic, now across *three* entry
   scripts (`single_month_zipper.sh`, `multi_month_zipper.sh`,
-  `run_overnight.sh`, not two) — works in each, just not shared.
+  `run_overnight.sh`, not two) -- works in each, just not shared.
+  CLOSED, won't-fix (session 16, 2026-08-26): no functional bug, pure
+  DRY cleanup with no user impact; project is past MVP with no forks,
+  not worth the session cost.
 - File-hash integrity checking for scripts, deferred to open-source
   prep (see `ideas.md`).
 - Storage reorg (`archive_*` files out of `$HOME` into a dedicated
-  parent dir) — parked until after the trust test; trust test is now
-  done, so this is unblocked whenever it's next picked up.
+  parent dir) -- CLOSED, won't-fix (session 16, 2026-08-26): purely
+  organizational, no bug behind it, judged feature creep now that the
+  project is past MVP and being parked.
 
 **5. Docs fell behind the `.env`/`config.sh` change -- now fully resolved**
 - `CONTRACTS.txt` and `README.md` updated 2026-08-13 (config.sh
