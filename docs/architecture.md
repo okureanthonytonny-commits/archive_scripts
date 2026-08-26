@@ -152,6 +152,11 @@ Full call-by-call reference, including which references are by-name
 
 ## Known gaps (see `ideas.md` for the original reasoning)
 
+- `reconcile_orphans()`/`verify_orphan()` (`lib/orphan_reconcile.sh`/
+  `verify.sh`) are sandbox-verified only -- no real orphan has occurred
+  on-device across any of the 5 backlog months, so the on-device path
+  has never actually executed. Accepted as a known risk (2026-08-26
+  decision); no dedicated on-device fixture test planned.
 - No size-ratio sanity check before delete — verify confirms the output
   *decodes*, not that compression actually shrank the file meaningfully.
 - No timeout on individual `ffmpeg` calls — a genuinely hung encode
