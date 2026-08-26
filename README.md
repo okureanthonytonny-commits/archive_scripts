@@ -1,87 +1,46 @@
 # archive_scripts
 
-Compresses phone media of a specified month, or a list of months, to
-usable quality. Deletes originals only once the compressed copy is
-verified, then zips the result. Runs entirely in Termux, no PC
-involved.
+Compresses phone media by month, verifies the compressed copy, deletes
+the original only once verified, zips the result. Runs entirely in
+Termux, no PC.
 
-- [Why this exists](#why-this-exists)
+- [What it does](#what-it-does)
 - [Getting started](#getting-started)
 - [Usage](#usage)
 - [Status](#status)
 - [Known gaps](#known-gaps)
 - [Docs](#docs)
 
-## Why this exists
-
-Kept direct on purpose — this is reasoning, not a pitch.
+## What it does
 
 - Goal: free device storage without losing data.
-
-  
-
-
+- Backup-only and compress-only were rejected on their own: backup
+  still costs time/data to restore and isn't risk-free; compress-only
+  needs progressive delete mid-run or both copies fill the phone. This
+  pipeline does both — originals backed up off-device (Backblaze B2)
+  separately, this pipeline compresses locally and deletes only after
+  verify.
+- One month at a time — compressed and original data never mix
+  mid-run. WhatsApp media skipped (already compressed on send).
+- State is append-only, file-based (`state_log.tsv`). Nothing inferred
+  from disk state — a crash is recoverable, not a mystery.
 
 ![Internal storage baseline, 82% used, 10 Aug 2026](docs/images/storage-baseline-82-percent.jpg)
-
-
-
-
-  
-
-
-
 ![Internal storage mid-run peak, 96% used, 10 Aug 2026](docs/images/storage-staging-peak-96-percent.jpg)
 
-
-
-
-
-  82% resting state, spiking to 96% mid-run — staging and originals
-  briefly coexist until each file is verified and the original is
-  deleted. Staging clears back down after every run; the peak is
-  expected, not a leak.
-- Two standard options, used together instead of picking one:
-  - **Backup then delete.** Tradeoff: pulling data back later still
-    costs data and time, even on cheap/zero-egress storage. Backup
-    isn't zero-risk either (lost password, platform breach). Solved by
-    also compressing instead of deleting outright.
-  - **Compress and delete.** Tradeoff: no existing tool does this across
-    a whole gallery unattended — it has to delete progressively as it
-    compresses, or storing both copies at once fills the phone. Solved
-    by this pipeline.
-- Decision: back up originals off-device first (Backblaze B2, may front
-  with Cloudflare for egress later) — separate from this pipeline, own
-  safety net. Then compress locally to usable quality, delete original
-  only after verify.
-- One month at a time: keeps compressed and original data from mixing
-  mid-run. WhatsApp media skipped — already compressed on send.
-
-First version was one script doing everything per file. Died twice on
-real runs, no way to tell what happened — Termux killed by Android
-mid-run, logs were just narrative strings with nothing to reconstruct
-state from.
-
-Rewrite is built around one rule: **never trust anything that isn't
-written down.** Every file's state lives in an append-only log. Nothing
-is inferred from what's currently on disk. A crash is recoverable, not
-a mystery.
+82% resting, 96% mid-run peak — staging and originals briefly coexist
+until verify+delete. Peak is expected, not a leak.
 
 ## Getting started
 
-Dependencies (confirmed by grepping the actual scripts for external
-command calls):
+Dependencies:
 
 ~~~
 pkg install python tmux termux-api ffmpeg webp zip unzip
 ~~~
 
-`termux-api` also needs the **Termux:API** companion app installed
-separately (F-Droid) for `termux-wake-lock` and `termux-notification` to
-work.
-
-Clone (needs `git`, not a pipeline dependency, just how you get the code)
-and run:
+`termux-api` needs the **Termux:API** companion app (F-Droid) for
+`termux-wake-lock`/`termux-notification`.
 
 ~~~
 git clone https://github.com/okureanthonytonny-commits/archive_scripts
@@ -93,88 +52,67 @@ cd archive_scripts
 ## Usage
 
 - `build_manifest.sh [-o OUTPUT] [-a MIN_AGE_DAYS] [--include DIR ...]
-  [--exclude DIR ...] [DIR [DIR2 ...]]` — scan directories, (re)build/
-  extend `archive_manifest.tsv`. Safe to re-run: skips paths already
-  recorded. `--include`/`--exclude` are mode switches, not one-value
-  flags — bare dirs before either one are implicitly `--include`; any
-  dir after a switch keeps going to that list until the other switch
-  appears, in any order. Omit all dirs to fall back to `INCLUDE_DIRS`
-  in `.env`; any include on the command line replaces it entirely.
-  `--exclude` values always merge with `EXCLUDE_DIRS` in `.env`.
-- `single_month_zipper.sh <YYYY-MM>` — compress, verify, delete-if-
-  verified, zip one month.
-- `multi_month_zipper.sh <YYYY-MM> [<YYYY-MM> ...]` — same, looped over
-  a list of months. Skips a month whose zip already exists; on a real
-  per-month failure, skips that month and continues (isolated fault),
-  but stops outright on a systemic one (low disk space, or an
-  anomaly-cancel choice) rather than repeating the same failure for
-  every remaining month.
-- `run_overnight.sh [<YYYY-MM> ...]` — wraps `multi_month_zipper.sh` for
-  unattended runs: holds a wake-lock, runs detached in `tmux`, and on
-  finish releases the wake-lock and kills its own `tmux` server so
-  nothing keeps running or draining battery. If `termux-notification`
-  is installed, it also fires a completion notification — useful since
-  the whole point is not needing to check on it:
-
-  
+  [--exclude DIR ...] [DIR [DIR2 ...]]` — scan dirs, (re)build/extend
+  `archive_manifest.tsv`. Safe to re-run: skips already-recorded
+  paths. `--include`/`--exclude` are mode switches, not one-value
+  flags — bare dirs before either are implicitly `--include`; a dir
+  after a switch stays in that list until the other switch appears, in
+  any order. No dirs given falls back to `INCLUDE_DIRS` in `.env`; a
+  command-line include replaces it entirely. `--exclude` always merges
+  with `EXCLUDE_DIRS`.
+- `single_month_zipper.sh <YYYY-MM>` — compress, verify,
+  delete-if-verified, zip one month.
+- `multi_month_zipper.sh <YYYY-MM> [<YYYY-MM> ...]` — same, looped.
+  Skips a month whose zip already exists. Isolated per-month failure:
+  skip and continue. Systemic failure (low disk, anomaly-cancel): stop
+  outright.
+- `run_overnight.sh [<YYYY-MM> ...]` — wraps `multi_month_zipper.sh`:
+  wake-lock, detached `tmux`, releases lock and kills its own tmux
+  session on finish. Fires a completion notification if
+  `termux-notification` is installed.
 
 ![Overnight run finished notification](docs/images/overnight-run-notification.jpg)
 
-
-
-All three self-relaunch into a detached `tmux` session with a wake-lock
-if not already inside one, so a run survives Termux getting
-backgrounded or the screen locking. Full pipeline detail is in
-[Docs](#docs) below.
+All three self-relaunch into a detached `tmux` session with a
+wake-lock if not already inside one.
 
 ## Status
 
-Actively in use, not a finished tool, but the original backlog is
-clear. Every real month (`2026-01`, `2026-03`, `2026-04`, `2025-12`,
-`2026-02`) has now run end-to-end on real device data — the last two
-(`2025-12`, `2026-02`) via a fully unattended overnight `run_overnight.sh`
-run, after a 3/3 trust test on the other three confirmed unattended
-mode was safe.
-
-
-
-
+Backlog clear. Every real month (`2026-01`, `2026-03`, `2026-04`,
+`2025-12`, `2026-02`) has run end-to-end on real device data — the
+last two fully unattended via `run_overnight.sh`, after a 3/3 trust
+test on the other three.
 
 ![Compressed month zips on-device, 9 Aug 2026](docs/images/compressed-months-zips.jpg)
 
-
-
-
-
 (`January-2099.zip` is test fixture data, not a real month.)
 
-Retry-on-failure exists: a file that fails verify gets recompressed
-automatically up to a cap before it's given up on as a real failure.
-Pass 2 (verify) now also runs several files concurrently
-(`MAX_PARALLEL_VERIFY`, same pattern as Pass 1's video compression),
-since verify was serial-dispatch-bound, not I/O-bound.
+Retry-on-failure: a file that fails verify gets recompressed
+automatically, up to a cap, before being given up on. Pass 2 (verify)
+runs several files concurrently (`MAX_PARALLEL_VERIFY`), same pattern
+as Pass 1.
 
 ## Known gaps
 
-- Orphaned staged files (in staging, no confirmed `DELETED` entry) are
-  reconciled automatically before the zip: each one is decoded-checked
-  through the real `verify()`, a `VERIFIED` orphan folds straight into
-  the zip, a `FAILED` one gets a tracked entry with a reason and falls
-  into the same retry-with-guard logic as Pass 1 (capped by `RETRY_MAX`).
-  Only genuinely failed-and-retry-exhausted orphans still need a human
-  look.
+- Orphan reconciliation (staged file, no confirmed `DELETED` entry):
+  decode-checked via `verify()` pre-zip; `VERIFIED` folds into the
+  zip, `FAILED` retries via the same guard as Pass 1. Sandbox-verified
+  only — no real orphan has occurred on-device across any of the 5
+  backlog months. Accepted as a known risk, not planned for a
+  dedicated on-device test.
 - Paths and config are read from `.env` (see `.env.example`) via
-  `lib/config.sh`, so another device just needs its own `.env` —
-  no code changes.
-- Only proven under Termux/Android. Never tried in a plain Linux shell.
+  `lib/config.sh`, so another device just needs its own `.env` — no
+  code changes.
+- Only proven under Termux/Android. Never tried in a plain Linux
+  shell.
 - No timeout on individual `ffmpeg` calls — a genuinely hung encode
   (distinct from a slow-but-progressing one) would never be caught.
   See `docs/sessions/issues.md`.
 
 ## Docs
 
-- [architecture.md](docs/architecture.md) — full pipeline detail: state
-  machine, verify barrier, what each log file is for.
+- [architecture.md](docs/architecture.md) — full pipeline detail:
+  state machine, verify barrier, what each log file is for.
 - [archive-architecture.mermaid](docs/archive-architecture.mermaid) —
   same pipeline as a diagram.
 - [sessions/](docs/sessions/) — session-by-session history: every bug
