@@ -612,3 +612,14 @@ what's actually on the remote.
 Fully superseded -- its design (url/kind reconstruction, retry
 integration) is merged for real, bug fixed, on `main` as of this
 session. Deleted on GitHub rather than left to linger.
+
+## Session 16 (FUS), 2026-08-26: README fix decoupled from stalled PR
+
+The README rewrite (strip narrative, add orphan on-device gap note,
+commit `4411bf5`) was built on `test/docs-patches-2026-08-25`, which
+still carries its two known unfixed bugs (AGENTS.md splice,
+CONTRACTS.txt formatting -- see 2026-08-25 session summary). Rather
+than wait on those, the README commit was cherry-picked straight onto
+`main` (as `f3625f1`) as an independent doc fix. The PR branch is
+unchanged, still unmerged, still has the two known bugs -- fixing and
+merging it is unrelated follow-up, not blocked by or blocking this.
