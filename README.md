@@ -26,10 +26,11 @@ Termux, no PC.
   from disk state — a crash is recoverable, not a mystery.
 
 ![Internal storage baseline, 82% used, 10 Aug 2026](docs/images/storage-baseline-82-percent.jpg)
-![Internal storage mid-run peak, 96% used, 10 Aug 2026](docs/images/storage-staging-peak-96-percent.jpg)
+![Internal storage after archiving through July, 78% used, 27 Aug 2026](docs/images/storage-after-8-months-78-percent.jpg)
 
-82% resting, 96% mid-run peak — staging and originals briefly coexist
-until verify+delete. Peak is expected, not a leak.
+82% at the start (10 Aug) down to 78% after archiving through
+`2026-07` (27 Aug) — `2026-08` (current month) deliberately untouched.
+See [docs/images/](docs/images/) for the mid-run 96% peak.
 
 ## Getting started
 
@@ -71,21 +72,19 @@ cd archive_scripts
   session on finish. Fires a completion notification if
   `termux-notification` is installed.
 
-![Overnight run finished notification](docs/images/overnight-run-notification.jpg)
+![archive_scripts overnight run finished notification, 27 Aug 2026](docs/images/archive-run-ok-2026-08-27.jpg)
 
 All three self-relaunch into a detached `tmux` session with a
 wake-lock if not already inside one.
 
 ## Status
 
-Backlog clear. Every real month (`2026-01`, `2026-03`, `2026-04`,
-`2025-12`, `2026-02`) has run end-to-end on real device data — the
-last two fully unattended via `run_overnight.sh`, after a 3/3 trust
-test on the other three.
-
-![Compressed month zips on-device, 9 Aug 2026](docs/images/compressed-months-zips.jpg)
-
-(`January-2099.zip` is test fixture data, not a real month.)
+Backlog clear through `2026-07`. Every month from `2025-12` onward
+has run end-to-end on real device data — `2026-01`–`2026-04` in the
+original 3/3-trust-tested backlog, then `2026-05`–`2026-07` in a
+follow-up run, both fully unattended via `run_overnight.sh`. `2026-08`
+(current month) deliberately untouched. See
+[docs/images/](docs/images/) for the original zips listing.
 
 Retry-on-failure: a file that fails verify gets recompressed
 automatically, up to a cap, before being given up on. Pass 2 (verify)
@@ -123,6 +122,9 @@ as Pass 1.
 
 ## Docs
 
+- [images/](docs/images/) — screenshots not embedded above: mid-run
+  storage peak (96%, 10 Aug), original overnight notification (10
+  Aug), first compressed-months listing (9 Aug).
 - [architecture.md](docs/architecture.md) — full pipeline detail:
   state machine, verify barrier, what each log file is for.
 - [archive-architecture.mermaid](docs/archive-architecture.mermaid) —
