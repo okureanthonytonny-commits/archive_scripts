@@ -631,3 +631,25 @@ than wait on those, the README commit was cherry-picked straight onto
 `main` (as `f3625f1`) as an independent doc fix. The PR branch is
 unchanged, still unmerged, still has the two known bugs -- fixing and
 merging it is unrelated follow-up, not blocked by or blocking this.
+
+## Session 16 (FUS), 2026-08-27: on-device run findings
+
+The on-device backlog run for `2026-05`/`2026-06`/`2026-07` surfaced
+three things, documented in README.md/architecture.md rather than
+fixed (project is being parked):
+
+- Orphan reconciliation actually got exercised on-device for real (3
+  orphans across `2026-05`/`2026-06`, all recovered) -- supersedes the
+  2026-08-26 "accepted risk, untested" note. It works.
+- `build_manifest.sh` records Android thumbnail-cache junk
+  (`.thumbnails/.nomedia`, `.thumbnails/.database_uuid`) as if it were
+  real media. Harmless (0-36 bytes), left as-is on purpose.
+- Real path trap: `build_manifest.sh`'s default output is relative to
+  cwd, `MANIFEST` defaults to `$HOME`-anchored. Running the former
+  from inside `archive_scripts/` silently populated the wrong file;
+  the pipeline just reported "0 files to process" with no error. Cost
+  a rerun with explicit `-o ~/archive_manifest.tsv` to catch.
+- Orphan-recovered files get zipped without their originals being
+  deleted, and the run's closing `NOTE` line is computed before
+  reconciliation runs, so it can undercount successes. Manual check
+  (`unzip -l` + `rm`) needed after any run with orphans.
