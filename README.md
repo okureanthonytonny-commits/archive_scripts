@@ -96,10 +96,22 @@ as Pass 1.
 
 - Orphan reconciliation (staged file, no confirmed `DELETED` entry):
   decode-checked via `verify()` pre-zip; `VERIFIED` folds into the
-  zip, `FAILED` retries via the same guard as Pass 1. Sandbox-verified
-  only — no real orphan has occurred on-device across any of the 5
-  backlog months. Accepted as a known risk, not planned for a
-  dedicated on-device test.
+  zip, `FAILED` retries via the same guard as Pass 1. Exercised for
+  real on-device during the 2026-08-27 backlog run (`2026-05`/
+  `2026-06`) — 3 orphans hit, all 3 recovered and folded into their
+  zips. Caveat: recovery zips the file but doesn't delete its
+  original (only Pass 3's normal delete does that) — check `unzip -l`
+  before manually deleting a flagged original.
+- `build_manifest.sh` doesn't filter Android thumbnail-cache junk
+  (`.thumbnails/.nomedia`, `.thumbnails/.database_uuid`) — recorded
+  like real media (harmless, 0–36 bytes). Left as-is deliberately: the
+  manifest reflects exactly what was scanned, not a filtered guess.
+- `build_manifest.sh`'s default output path is relative to wherever
+  it's run (`./archive_manifest.tsv`), while `MANIFEST` (used by every
+  other script) defaults to `$HOME/archive_manifest.tsv` — running it
+  from inside `archive_scripts/` silently writes to the wrong file,
+  and the pipeline just reports "0 files to process" with no error.
+  Always pass `-o ~/archive_manifest.tsv` explicitly.
 - Paths and config are read from `.env` (see `.env.example`) via
   `lib/config.sh`, so another device just needs its own `.env` — no
   code changes.
