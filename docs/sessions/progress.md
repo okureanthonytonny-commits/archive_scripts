@@ -541,3 +541,41 @@
   with reasoning (commit 96f6b35).
 - `test/docs-patches-2026-08-25` unchanged, still unmerged, still has
   its two known bugs -- untouched this session, separate future work.
+
+## 2026-08-27
+- Session 16 (FUS), continued: ran the on-device backlog for
+  `2026-05`/`2026-06`/`2026-07` (excluding `2026-08`, current month).
+- Hit and fixed a real manifest-path mismatch: `build_manifest.sh`'s
+  relative default output vs. `MANIFEST`'s `$HOME`-anchored default
+  caused the pipeline to read a stale manifest ("0 files to
+  process"). Fixed by rerunning with explicit `-o
+  ~/archive_manifest.tsv`.
+- Hit and fixed an OOM kill on `2026-05` (unbounded concurrent
+  `ffmpeg` on a 4GB device) via `MAX_PARALLEL_VIDEO=1`. Confirmed
+  crash-safe: append-only state meant nothing was lost, just redone.
+- Orphan reconciliation exercised for real on-device for the first
+  time (3 orphans across `2026-05`/`2026-06`, all recovered) —
+  supersedes the 2026-08-26 "accepted risk, untested" framing.
+- All three months zip-verified OK; manually confirmed and deleted
+  the 3 orphan-recovered originals (recovery path zips but doesn't
+  auto-delete).
+- Confirmed `archive_manifest.tsv` was never actually committed to
+  git; added it to `.gitignore` regardless, alongside `.env`.
+- Verified final device storage (78% used, down from 82% baseline)
+  and confirmed the residual old-dated files in `DCIM/Camera` were
+  restored/new arrivals, not a delete-failure bug (zero filename
+  overlap with what's already in `January-2026.zip`).
+- Deleted the `January-2099.zip` test fixture from the real device
+  Archives folder.
+- Documented all findings (thumbnail junk, manifest-path trap,
+  orphan-recovery no-delete + stale closing `NOTE`) in README.md,
+  architecture.md, and issues.md rather than fixing the code —
+  consistent with the project's post-MVP won't-fix stance.
+- Refreshed README.md screenshots: replaced the mid-run-peak/original
+  notification/zips-listing images with the current 78%-storage and
+  latest overnight-notification screenshots; moved the rest to a
+  `docs/images/` pointer instead of inlining everything.
+- Session 16 (FUS) closed. Project parked: on-device goal achieved
+  (storage freed through `2026-07`), docs fully caught up. Next up:
+  ~/ideas and archive_scripts docs review to set up the next queued
+  task.
