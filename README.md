@@ -110,7 +110,9 @@ as Pass 1.
   other script) defaults to `$HOME/archive_manifest.tsv` — running it
   from inside `archive_scripts/` silently writes to the wrong file,
   and the pipeline just reports "0 files to process" with no error.
-  Always pass `-o ~/archive_manifest.tsv` explicitly.
+  Always pass `-o ~/archive_manifest.tsv` explicitly. Recurred
+  2026-09-04 targeting a single ad-hoc file outside the normal
+  month-backlog flow -- see `docs/sessions/issues.md`.
 - Paths and config are read from `.env` (see `.env.example`) via
   `lib/config.sh`, so another device just needs its own `.env` — no
   code changes.
