@@ -653,3 +653,29 @@ fixed (project is being parked):
   deleted, and the run's closing `NOTE` line is computed before
   reconciliation runs, so it can undercount successes. Manual check
   (`unzip -l` + `rm`) needed after any run with orphans.
+
+## 2026-09-04: manifest-path trap recurred in practice
+
+The cwd-relative-output-vs-$HOME-anchored-$MANIFEST gap (documented
+2026-08-27) hit for real a second time: `build_manifest.sh` was run
+from inside `archive_scripts/` to target one manually-specified file
+(`storage/movies/Edits/VID_20260904_030402_279_bsl.mp4`, tagged
+`2026-09`), writing to `archive_scripts/archive_manifest.tsv`.
+`single_month_zipper.sh 2026-09` then read the untouched, nonexistent
+`$HOME/archive_manifest.tsv`, found zero files, and exited clean with
+no error -- a silent no-op, same failure shape as 2026-08-27.
+
+Confirmed via the manifest content itself (correct row, wrong file)
+and `track.py get` before touching anything. Fixed by `mv`-ing the
+manifest to `$HOME/archive_manifest.tsv` and re-running -- completed
+successfully, `September-2026.zip` verified in `Archives/`.
+
+No code change: the documented workaround (README's `Known gaps`
+entry, "always pass `-o ~/archive_manifest.tsv` explicitly") already
+covers this -- it just wasn't followed this time, since `build_manifest.sh`
+was invoked without `-o` while targeting a single file outside the
+normal month-backlog flow. Two real occurrences now (2026-08-27,
+2026-09-04), both silent no-ops rather than errors -- worth reopening
+as a real fix (default `OUTPUT` to `$MANIFEST` instead of
+`./archive_manifest.tsv`) if a third occurrence happens rather than
+continuing to rely on remembering the flag.
