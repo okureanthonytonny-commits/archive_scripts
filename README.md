@@ -121,6 +121,14 @@ as Pass 1.
 - No timeout on individual `ffmpeg` calls — a genuinely hung encode
   (distinct from a slow-but-progressing one) would never be caught.
   See `docs/sessions/issues.md`.
+- Resume covers interrupted runs, not lost outputs. `DELETED` is
+  terminal in `state_log.tsv`, and staging is cleared after zipping,
+  so the zip is the only on-device copy. If a zip is deleted, a
+  re-run skips those files, finds nothing to zip, and exits 0
+  without recreating it (the GHOST check flags the mismatch, but
+  nothing regenerates the archive). Recovery has to come from the
+  off-device backup. Read from the code, not yet reproduced
+  on-device (found 2026-10-16 with `2026-09`).
 
 ## Docs
 
