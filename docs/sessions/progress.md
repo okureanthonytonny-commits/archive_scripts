@@ -579,3 +579,34 @@
   (storage freed through `2026-07`), docs fully caught up. Next up:
   ~/ideas and archive_scripts docs review to set up the next queued
   task.
+
+## 2026-10-16
+- Archived `2026-08` on-device via `run_overnight.sh 2026-08` (now a
+  completed month): 286 files, 11833 MB of originals into a 1.7 GB
+  zip, zip verified, staging cleared, no OOM kill. The state log grew
+  by exactly 3 rows per file (858). A before/after snapshot of the
+  manifest, pre-August files, trash and Archives showed no other
+  change.
+- Answered the mtime question from the code instead of a fix:
+  `touch -r` after every compress plus zip's per-entry mtimes mean
+  dates survive. Originals are deleted after a verified zip by
+  design, so date ordering lives inside the zip.
+- Documented that resume covers interrupted runs, not lost outputs:
+  `DELETED` is terminal and staging is cleared after zipping, so a
+  deleted zip is not regenerated (README note, `7002438`). Related
+  limit: `multi_month_zipper.sh` skips any month whose zip exists, so
+  a partial-month run is never resumed or appended to.
+- Set up a gitignored `.env` (none existed): top-level media folders
+  included, `.thumbnails` excluded. Rebuilt the manifest fresh because
+  `build_manifest.sh` never prunes rows for files that are gone;
+  `2026-08` went 652 -> 286 rows (357 of the 392 dropped rows were
+  thumbnails).
+- 486 pre-August files on disk have manifest rows but no state-log
+  rows, consistent with session 16's restored/new-arrival finding.
+  Not chased; snapshots taken so any change can be compared later.
+- `2026-09` not run yet: its manifest has 97 rows, one of them the
+  `DELETED` test file (expect one GHOST anomaly).
+- Docs landed so far: README resumability note and the session
+  summary (`23b583f`). Still to do: issues.md entries, architecture.md
+  rerun-semantics section, README WhatsApp and `INCLUDE_DIRS` fixes,
+  bugQueue sweep.
