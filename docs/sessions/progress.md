@@ -610,3 +610,28 @@
   summary (`23b583f`). Still to do: issues.md entries, architecture.md
   rerun-semantics section, README WhatsApp and `INCLUDE_DIRS` fixes,
   bugQueue sweep.
+
+## 2026-10-30
+- Storage audit: shared storage is 37G (`Archives` 16G, `DCIM/Camera`
+  12G, `Android` 7.4G); the Termux home is 413M. The remaining use
+  behind the 85% figure is apps and system data, not visible from
+  Termux.
+- Found 477 pre-April originals still in `DCIM/Camera` (1 from 2025-12,
+  137 from 2026-01, 153 from 2026-02, 186 from 2026-03, ~10.4G), with
+  zips already built for those months. Zero filename-stem overlap with
+  any zip: these files were never in a run's file list.
+- Supersedes the 2026-08-27 and 2026-10-16 "restored/new arrivals"
+  framing. Changed time updates on rename on this storage (tested), and
+  472 of the 477 files have ctime within 60 s of mtime, so they sat
+  untouched on disk during the runs. They were missing from the
+  manifest the runs used, not added later. Cause still open: the
+  builder of the Aug 3 manifest is not in git (history starts Aug 7).
+- Files listed per run vs originals left on disk: 2025-12 628 / 1,
+  2026-01 212 / 137, 2026-02 100 / 153. The 2026-03 run logs were not
+  compared yet.
+- Termux was reinstalled (F-Droid build) from a backup. Verified: repo
+  clean at `83b3897`, `.env` and `.state_log.tsv` present, tools installed.
+- Open: manifest row-order comparison, the 5 files touched later, how
+  to archive the 477 files (undecided; no rerun of 2026-01/02/03
+  yet), `2026-09` and `2026-10` not run. Detail in
+  `session-2026-10-30-summary.md`.
